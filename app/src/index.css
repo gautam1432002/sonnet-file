@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-from: #0b1026;
+    --bg-via: #1e2a5a;
+    --bg-to: #3b6ea8;
+    --accent: #cfe8ff;
+    
+    --glass: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --blur: 12px;
+    --radius: 16px;
+  }
+}
+
+html, body {
+  @apply h-full w-full m-0 p-0 overflow-hidden text-white font-sans;
+  background: linear-gradient(135deg, var(--bg-from), var(--bg-via), var(--bg-to));
+  background-size: 200% 200%;
+  transition: background 1s ease;
+}
+
+#root {
+  @apply h-full w-full;
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.knob-track {
+  stroke: var(--glass-border);
+}
+
+.knob-value {
+  stroke: var(--accent);
+}
+
+.knob-thumb {
+  fill: var(--accent);
+}
