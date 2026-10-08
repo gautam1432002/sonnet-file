@@ -14,6 +14,7 @@ export interface DeckState {
   eqHigh: number;
   filter: number;
   volume: number;
+  pitch: number;
   cueOn: boolean;
 }
 
@@ -27,6 +28,7 @@ const initialDeckState: DeckState = {
   eqHigh: 0,
   filter: 0, // -1 to 1
   volume: 1, // 0 to 1
+  pitch: 1, // 0 to 2
   cueOn: false,
 };
 
@@ -98,6 +100,7 @@ export const useStore = create<MixerState>((set, get) => ({
       if (updates.eqHigh !== undefined) deckObj.setEq('high', updates.eqHigh);
       if (updates.filter !== undefined) deckObj.setFilter(updates.filter);
       if (updates.volume !== undefined) deckObj.setVolume(updates.volume);
+      if (updates.pitch !== undefined) deckObj.setPitch(updates.pitch);
       if (updates.cueOn !== undefined) deckObj.setCue(updates.cueOn);
       
       if (updates.playing !== undefined) {

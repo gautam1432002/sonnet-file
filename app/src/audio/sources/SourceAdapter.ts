@@ -6,6 +6,7 @@ export interface SourceAdapter {
   duration: number;
   getPosition(currentTime: number): number;
   connect(destination: AudioNode): void;
+  setPlaybackRate(rate: number): void;
 }
 
 export class BufferSourceAdapter implements SourceAdapter {
@@ -16,6 +17,7 @@ export class BufferSourceAdapter implements SourceAdapter {
   private startTime: number = 0;
   private offsetTime: number = 0;
   private isPlaying: boolean = false;
+  private playbackRate: number = 1;
   
   public duration: number = 0;
 
@@ -40,6 +42,7 @@ export class BufferSourceAdapter implements SourceAdapter {
     
     this.source = this.context.createBufferSource();
     this.source.buffer = this.buffer;
+    this.source.playbackRate.value = this.playbackRate;
     this.startTime = when;
     this.offsetTime = offset;
     this.isPlaying = true;
@@ -60,7 +63,7 @@ export class BufferSourceAdapter implements SourceAdapter {
 
   getPosition(currentTime: number): number {
     if (!this.isPlaying) return this.offsetTime;
-    let pos = this.offsetTime + (currentTime - this.startTime);
+    let pos = this.offsetTime + (currentTime - this.startTime) * this.playbackRate;
     if (pos > this.duration) {
       pos = this.duration; // Ended
       this.isPlaying = false;
@@ -77,6 +80,19 @@ export class BufferSourceAdapter implements SourceAdapter {
   getBuffer(): AudioBuffer | null {
     return this.buffer;
   }
+
+  setPlaybackRate(rate: number): void {
+    if (this.isPlaying) {
+      // Before changing rate, update offset Time to current position
+      // so getPosition doesn't jump
+      this.offsetTime = this.getPosition(this.context.currentTime);
+      this.startTime = this.context.currentTime;
+    }
+    this.playbackRate = rate;
+    if (this.source) {
+      this.source.playbackRate.setTargetAtTime(rate, this.context.currentTime, 0.01);
+    }
+  }
 }
 
 export class MediaElementAdapter implements SourceAdapter {
@@ -86,15 +102,46 @@ export class MediaElementAdapter implements SourceAdapter {
   start(): void { throw new Error('not implemented in Phase 1'); }
   stop(): void { throw new Error('not implemented in Phase 1'); }
   getPosition(): number { throw new Error('not implemented in Phase 1'); }
-  connect(): void { throw new Error('not implemented in Phase 1'); }
+  setPlaybackRate(): void { throw new Error('not implemented in Phase 1'); }
 }
 
 export class MediaStreamAdapter implements SourceAdapter {
   kind = 'mediaStream' as const;
-  duration = 0;
-  async load(): Promise<void> { throw new Error('not implemented in Phase 1'); }
-  start(): void { throw new Error('not implemented in Phase 1'); }
-  stop(): void { throw new Error('not implemented in Phase 1'); }
-  getPosition(): number { throw new Error('not implemented in Phase 1'); }
-  connect(): void { throw new Error('not implemented in Phase 1'); }
+  duration = Infinity;
+  private stream: MediaStream | null = null;
+  private source: MediaStreamAudioSourceNode | null = null;
+  private context: AudioContext;
+
+  constructor(context: AudioContext) {
+    this.context = context;
+  }
+
+  async load(input: MediaStream | any): Promise<void> { 
+    this.stream = input;
+  }
+  
+  start(): void { 
+    if (!this.stream) return;
+    this.stop();
+    this.source = this.context.createMediaStreamSource(this.stream);
+  }
+  
+  stop(): void { 
+    if (this.source) {
+      this.source.disconnect();
+      this.source = null;
+    }
+  }
+  
+  getPosition(): number { return 0; }
+  
+  connect(destination: AudioNode): void { 
+    if (this.source) {
+      this.source.connect(destination);
+    }
+  }
+  
+  setPlaybackRate(): void { 
+    // Not possible on live stream
+  }
 }

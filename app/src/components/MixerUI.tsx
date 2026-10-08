@@ -46,23 +46,37 @@ export function MixerUI() {
         size={56}
       />
       
-      {/* Channel Fader */}
-      <div className="h-40 flex items-center justify-center mt-4 group">
-        <input 
-          type="range" 
-          min="0" max="1" step="0.01" 
-          value={state.volume}
-          onChange={(e) => updateDeck(id, { volume: parseFloat(e.target.value) })}
-          onDoubleClick={() => updateDeck(id, { volume: 1 })}
-          className="h-32 -rotate-90 appearance-none bg-transparent cursor-pointer"
-          style={{ width: '128px' }}
-        />
+      {/* Channel Fader & Meter */}
+      <div className="flex items-center gap-4 mt-4">
+        {/* Fake VU meter */}
+        <div className="flex flex-col gap-[2px] w-3 h-32 bg-black/60 p-1 rounded-sm overflow-hidden justify-end">
+          {Array.from({ length: 15 }).map((_, i) => {
+            const isLit = state.playing && (15 - i) <= state.volume * 15 * (state.trim / 2 + 0.5);
+            return (
+              <div 
+                key={i} 
+                className={`w-full flex-1 rounded-sm transition-colors ${isLit ? (i < 3 ? 'bg-red-500 shadow-[0_0_5px_red]' : i < 6 ? 'bg-yellow-400 shadow-[0_0_5px_yellow]' : 'bg-green-500 shadow-[0_0_5px_green]') : 'bg-white/5'}`} 
+              />
+            );
+          })}
+        </div>
+        <div className="h-40 flex items-center justify-center group">
+          <input 
+            type="range" 
+            min="0" max="1" step="0.01" 
+            value={state.volume}
+            onChange={(e) => updateDeck(id, { volume: parseFloat(e.target.value) })}
+            onDoubleClick={() => updateDeck(id, { volume: 1 })}
+            className="h-32 -rotate-90 appearance-none bg-transparent cursor-pointer"
+            style={{ width: '128px' }}
+          />
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="glass-panel p-6 flex flex-col gap-8 items-center justify-between col-span-1 md:col-span-2 lg:col-span-1">
+    <div className="glass-panel p-6 flex flex-col gap-8 items-center justify-between h-full bg-gradient-to-b from-black/20 to-black/40">
       <div className="flex w-full justify-around items-start">
         {renderDeckStrip('A', deckA)}
         {renderDeckStrip('B', deckB)}

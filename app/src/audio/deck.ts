@@ -1,6 +1,6 @@
 import { engine } from './engine';
 import { cueSystem } from './cue';
-import { BufferSourceAdapter } from './sources/SourceAdapter';
+import { BufferSourceAdapter, MediaStreamAdapter } from './sources/SourceAdapter';
 import type { SourceAdapter } from './sources/SourceAdapter';
 
 export class Deck {
@@ -67,11 +67,16 @@ export class Deck {
     this.cueGain.connect(cueSystem.cueInput);
   }
 
-  async load(file: File) {
-    // Only buffer source supported in Phase 1
-    const adapter = new BufferSourceAdapter(engine.ctx);
-    await adapter.load(file);
-    this.sourceAdapter = adapter;
+  async load(fileOrStream: File | MediaStream) {
+    if (fileOrStream instanceof File) {
+      const adapter = new BufferSourceAdapter(engine.ctx);
+      await adapter.load(fileOrStream);
+      this.sourceAdapter = adapter;
+    } else {
+      const adapter = new MediaStreamAdapter(engine.ctx);
+      await adapter.load(fileOrStream);
+      this.sourceAdapter = adapter;
+    }
     this.sourceAdapter.connect(this.trimNode);
   }
 
@@ -144,6 +149,12 @@ export class Deck {
 
   setVolume(val: number) {
     this.channelFader.gain.setTargetAtTime(val, engine.ctx.currentTime, 0.01);
+  }
+
+  setPitch(val: number) {
+    if (this.sourceAdapter) {
+      this.sourceAdapter.setPlaybackRate(val);
+    }
   }
 
   setCrossfaderGain(val: number) {
