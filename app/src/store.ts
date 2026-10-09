@@ -16,6 +16,8 @@ export interface DeckState {
   volume: number;
   pitch: number;
   cueOn: boolean;
+  peaks: number[];
+  youtubeId: string | null;
 }
 
 const initialDeckState: DeckState = {
@@ -30,6 +32,8 @@ const initialDeckState: DeckState = {
   volume: 1, // 0 to 1
   pitch: 1, // 0 to 2
   cueOn: false,
+  peaks: [],
+  youtubeId: null,
 };
 
 interface MixerState {

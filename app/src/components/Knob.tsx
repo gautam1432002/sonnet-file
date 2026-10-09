@@ -54,7 +54,7 @@ export function Knob({ label, value, onChange, onDoubleClick, size = 48 }: KnobP
   return (
     <div className="flex flex-col items-center gap-1">
       <div 
-        className="relative cursor-ns-resize focus:outline-none focus:ring-2 focus:ring-[var(--accent)] rounded-full"
+        className="relative cursor-ns-resize focus:outline-none focus:ring-2 focus:ring-[var(--accent)] rounded-full touch-none select-none"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
