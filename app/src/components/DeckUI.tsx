@@ -67,22 +67,30 @@ export function DeckUI({ id }: DeckUIProps) {
   }, [ytPlayer, deckState.volume, deckState.trim, crossfader, crossfaderCurve, id]);
 
   const handleFile = async (file: File) => {
-    updateDeck(id, { trackName: 'LOADING...' });
+    updateDeck(id, { trackName: 'LOADING...', artist: 'Local File', artworkUrl: null });
     try {
       await engine.ctx.resume();
       await deckObj.load(file);
       const adapter = deckObj.sourceAdapter as BufferSourceAdapter;
       const buffer = adapter.getBuffer();
-      const name = file.name.replace(/\.[^/.]+$/, '').toUpperCase();
+      
+      let name = file.name.replace(/\.[^/.]+$/, '').toUpperCase();
+      let artist = 'UNKNOWN ARTIST';
+      if (name.includes(' - ')) {
+        const parts = name.split(' - ');
+        artist = parts[0].trim();
+        name = parts.slice(1).join(' - ').trim();
+      }
+
       if (buffer) {
         const p = computePeaks(buffer, 800);
         setPeaks(p);
-        updateDeck(id, { trackName: name, duration: deckObj.getDuration(), playing: false, peaks: p, youtubeId: null });
+        updateDeck(id, { trackName: name, artist, duration: deckObj.getDuration(), playing: false, peaks: p, youtubeId: null });
       } else {
-        updateDeck(id, { trackName: name, duration: deckObj.getDuration(), playing: false, youtubeId: null });
+        updateDeck(id, { trackName: name, artist, duration: deckObj.getDuration(), playing: false, youtubeId: null });
       }
       deckObj.seek(0);
-    } catch { updateDeck(id, { trackName: 'ERROR' }); }
+    } catch { updateDeck(id, { trackName: 'ERROR', artist: null }); }
   };
 
   const handleYtLoad = (e: React.FormEvent) => {
@@ -107,15 +115,15 @@ export function DeckUI({ id }: DeckUIProps) {
     setIsSearching(false);
   };
 
-  const loadYTVideo = (vId: string, title: string) => {
+  const loadYTVideo = (vId: string, title: string, thumbnail: string, author: string) => {
     deckObj.pause(); setPeaks([]);
-    updateDeck(id, { youtubeId: vId, trackName: title.toUpperCase(), duration: 0, playing: true });
+    updateDeck(id, { youtubeId: vId, trackName: title.toUpperCase(), artist: author.toUpperCase(), artworkUrl: thumbnail, duration: 0, playing: true });
     setShowSearch(false);
   };
 
   const unloadYT = () => {
     deckObj.pause(); setYtPlayer(null); setPeaks([]);
-    updateDeck(id, { youtubeId: null, trackName: null, playing: false });
+    updateDeck(id, { youtubeId: null, trackName: null, artist: null, artworkUrl: null, playing: false });
   };
 
   const progressPct = deckState.duration > 0 ? Math.min(100, (pos / deckState.duration) * 100) : 0;
@@ -149,7 +157,7 @@ export function DeckUI({ id }: DeckUIProps) {
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {isSearching ? <div style={{ color: accent, textAlign: 'center', padding: 40, letterSpacing: '0.1em' }}>SEARCHING...</div> :
               searchResults.map((v, i) => (
-                <div key={i} onClick={() => loadYTVideo(v.videoId, v.title)} style={{
+                <div key={i} onClick={() => loadYTVideo(v.videoId, v.title, v.thumbnail, v.author)} style={{
                   display: 'flex', gap: 12, padding: 8, borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.02)',
                 }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>
                   <img src={v.thumbnail} style={{ width: 100, height: 60, objectFit: 'cover', borderRadius: 4 }} alt="" />

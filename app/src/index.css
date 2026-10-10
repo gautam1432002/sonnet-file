@@ -1,23 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
 @import "tailwindcss";
 
-@property --bg-from { syntax: '<color>'; inherits: true; initial-value: #000000; }
-@property --bg-via  { syntax: '<color>'; inherits: true; initial-value: #050505; }
-@property --bg-to   { syntax: '<color>'; inherits: true; initial-value: #0a0a0a; }
-@property --accent  { syntax: '<color>'; inherits: true; initial-value: #00ffcc; }
+@property --bg-from { syntax: '<color>'; inherits: true; initial-value: #0a0a0a; }
+@property --bg-via  { syntax: '<color>'; inherits: true; initial-value: #111111; }
+@property --bg-to   { syntax: '<color>'; inherits: true; initial-value: #181818; }
+@property --accent  { syntax: '<color>'; inherits: true; initial-value: #00f3ff; }
 
 @layer base {
   :root {
-    --bg-from: #000000;
-    --bg-via: #030303;
-    --bg-to: #080808;
-    --accent: #00ffcc;
+    --bg-from: #080808;
+    --bg-via: #121212;
+    --bg-to: #1a1a1a;
+    --accent: #00f3ff;
     
-    --glass: rgba(10, 10, 10, 0.4);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-highlight: rgba(255, 255, 255, 0.03);
+    --glass: rgba(18, 18, 18, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.02);
     --blur: 40px;
-    --radius: 16px;
+    --radius: 12px;
   }
 
   body {

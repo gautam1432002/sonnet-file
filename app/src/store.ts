@@ -6,6 +6,8 @@ import { engine } from './audio/engine';
 
 export interface DeckState {
   trackName: string | null;
+  artist: string | null;
+  artworkUrl: string | null;
   duration: number;
   playing: boolean;
   trim: number;
@@ -22,6 +24,8 @@ export interface DeckState {
 
 const initialDeckState: DeckState = {
   trackName: null,
+  artist: null,
+  artworkUrl: null,
   duration: 0,
   playing: false,
   trim: 1, // 0 to 2

@@ -54,56 +54,66 @@ export default function App() {
         <header
           className="bento"
           style={{
-            display: 'flex',
+            display: 'grid',
+            gridTemplateColumns: '1fr auto 1fr',
             alignItems: 'center',
-            justifyContent: 'space-between',
             padding: '12px 24px',
             flexShrink: 0,
+            background: 'var(--glass)',
+            borderBottom: '1px solid var(--glass-border)',
             border: 'none',
-            background: 'transparent',
-            boxShadow: 'none',
-            backdropFilter: 'none'
+            backdropFilter: 'blur(var(--blur)) saturate(150%)',
+            WebkitBackdropFilter: 'blur(var(--blur)) saturate(150%)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{
-              fontSize: 32,
-              fontFamily: '"Dancing Script", cursive',
-              color: 'var(--accent)',
-              transition: 'color 3.5s ease',
-            }}>
-              Sonnet File
-            </span>
+          {/* Deck A Info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: deckA.trackName ? 1 : 0.3, overflow: 'hidden' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.05)', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
+              {deckA.artworkUrl ? (
+                <img src={deckA.artworkUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, textOverflow: 'ellipsis', overflow: 'hidden' }}>{deckA.trackName || 'Deck A'}</span>
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textOverflow: 'ellipsis', overflow: 'hidden' }}>{deckA.artist || 'Load Track'}</span>
+            </div>
+          </div>
+
+          {/* Logo Center */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{
+                fontSize: 32,
+                fontFamily: '"Dancing Script", cursive',
+                color: 'var(--accent)',
+                transition: 'color 3.5s ease',
+              }}>
+                Sonnet File
+              </span>
+            </div>
             <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.25em', fontWeight: 600 }}>
               DJ STUDIO
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* Live indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: isAnyPlaying ? 'var(--accent)' : 'rgba(255,255,255,0.15)',
-                transition: 'background 1s ease',
-              }} />
-              <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>
-                {isAnyPlaying ? 'LIVE' : 'IDLE'}
-              </span>
+          {/* Deck B Info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: deckB.trackName ? 1 : 0.3, overflow: 'hidden', justifyContent: 'flex-end', textAlign: 'right' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, textOverflow: 'ellipsis', overflow: 'hidden' }}>{deckB.trackName || 'Deck B'}</span>
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textOverflow: 'ellipsis', overflow: 'hidden' }}>{deckB.artist || 'Load Track'}</span>
             </div>
-
-            {/* Keyboard hints */}
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              {[['Q', 'Deck A'], ['P', 'Deck B'], ['← →', 'Xfade']].map(([key, label]) => (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{
-                    fontSize: 9, fontFamily: 'monospace', padding: '2px 6px',
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 4, color: 'rgba(255,255,255,0.5)',
-                  }}>{key}</span>
-                  <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)' }}>{label}</span>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.05)', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
+              {deckB.artworkUrl ? (
+                <img src={deckB.artworkUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </header>
