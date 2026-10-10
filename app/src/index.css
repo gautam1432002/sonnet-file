@@ -1,23 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
 @import "tailwindcss";
 
-@property --bg-from { syntax: '<color>'; inherits: true; initial-value: #0a0a0a; }
-@property --bg-via  { syntax: '<color>'; inherits: true; initial-value: #111111; }
-@property --bg-to   { syntax: '<color>'; inherits: true; initial-value: #181818; }
-@property --accent  { syntax: '<color>'; inherits: true; initial-value: #00f3ff; }
+@property --bg-from { syntax: '<color>'; inherits: true; initial-value: #000000; }
+@property --bg-via  { syntax: '<color>'; inherits: true; initial-value: #050505; }
+@property --bg-to   { syntax: '<color>'; inherits: true; initial-value: #0a0a0a; }
+@property --accent  { syntax: '<color>'; inherits: true; initial-value: #00ffcc; }
 
 @layer base {
   :root {
-    --bg-from: #080808;
-    --bg-via: #121212;
-    --bg-to: #1a1a1a;
-    --accent: #00f3ff;
+    /* Professional Dark Theme Variables */
+    --bg-dark: #0a0a0a;
+    --bg-panel: rgba(23, 23, 23, 0.7); /* Slightly transparent to see ambient canvas */
+    --deck-a-accent: #00e5ff;
+    --deck-b-accent: #ff007f;
+    --text-main: #ffffff;
+    --text-muted: #a3a3a3;
+    --border-color: #333333;
+
+    /* Existing mirror pot / glass variables */
+    --bg-from: #000000;
+    --bg-via: #030303;
+    --bg-to: #080808;
+    --accent: #00ffcc;
     
-    --glass: rgba(18, 18, 18, 0.6);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-highlight: rgba(255, 255, 255, 0.02);
+    --glass: rgba(10, 10, 10, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-highlight: rgba(255, 255, 255, 0.03);
     --blur: 40px;
-    --radius: 12px;
+    --radius: 16px;
   }
 
   body {

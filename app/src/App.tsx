@@ -5,6 +5,7 @@ import { MixerUI } from './components/MixerUI';
 import { MasterUI } from './components/MasterUI';
 import { CueUI } from './components/CueUI';
 import { AmbientCanvas } from './components/AmbientCanvas';
+import { TopInfoBar } from './components/TopInfoBar';
 import { engine } from './audio/engine';
 import { useAmbientColor } from './hooks/useAmbientColor';
 
@@ -50,73 +51,7 @@ export default function App() {
           boxSizing: 'border-box',
         }}
       >
-        {/* ── Header ── */}
-        <header
-          className="bento"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'center',
-            padding: '12px 24px',
-            flexShrink: 0,
-            background: 'var(--glass)',
-            borderBottom: '1px solid var(--glass-border)',
-            border: 'none',
-            backdropFilter: 'blur(var(--blur)) saturate(150%)',
-            WebkitBackdropFilter: 'blur(var(--blur)) saturate(150%)',
-          }}
-        >
-          {/* Deck A Info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: deckA.trackName ? 1 : 0.3, overflow: 'hidden' }}>
-            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.05)', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
-              {deckA.artworkUrl ? (
-                <img src={deckA.artworkUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, textOverflow: 'ellipsis', overflow: 'hidden' }}>{deckA.trackName || 'Deck A'}</span>
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textOverflow: 'ellipsis', overflow: 'hidden' }}>{deckA.artist || 'Load Track'}</span>
-            </div>
-          </div>
-
-          {/* Logo Center */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{
-                fontSize: 32,
-                fontFamily: '"Dancing Script", cursive',
-                color: 'var(--accent)',
-                transition: 'color 3.5s ease',
-              }}>
-                Sonnet File
-              </span>
-            </div>
-            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.25em', fontWeight: 600 }}>
-              DJ STUDIO
-            </span>
-          </div>
-
-          {/* Deck B Info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: deckB.trackName ? 1 : 0.3, overflow: 'hidden', justifyContent: 'flex-end', textAlign: 'right' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, textOverflow: 'ellipsis', overflow: 'hidden' }}>{deckB.trackName || 'Deck B'}</span>
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textOverflow: 'ellipsis', overflow: 'hidden' }}>{deckB.artist || 'Load Track'}</span>
-            </div>
-            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.05)', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
-              {deckB.artworkUrl ? (
-                <img src={deckB.artworkUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
+        <TopInfoBar />
 
         {/* ── Bento Grid ── */}
         <div
