@@ -59,20 +59,22 @@ export default function App() {
             justifyContent: 'space-between',
             padding: '12px 24px',
             flexShrink: 0,
+            border: 'none',
+            background: 'transparent',
+            boxShadow: 'none',
+            backdropFilter: 'none'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{
-              fontSize: 22,
-              fontWeight: 900,
-              letterSpacing: '-0.04em',
+              fontSize: 32,
+              fontFamily: '"Dancing Script", cursive',
               color: 'var(--accent)',
-              textShadow: '0 0 24px var(--accent)',
-              transition: 'color 3.5s ease, text-shadow 3.5s ease',
+              transition: 'color 3.5s ease',
             }}>
-              SONNET FILE
+              Sonnet File
             </span>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.2em', fontWeight: 500 }}>
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.25em', fontWeight: 600 }}>
               DJ STUDIO
             </span>
           </div>
@@ -81,10 +83,9 @@ export default function App() {
             {/* Live indicator */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{
-                width: 7, height: 7, borderRadius: '50%',
+                width: 6, height: 6, borderRadius: '50%',
                 background: isAnyPlaying ? 'var(--accent)' : 'rgba(255,255,255,0.15)',
-                boxShadow: isAnyPlaying ? '0 0 10px var(--accent)' : 'none',
-                transition: 'background 1s ease, box-shadow 1s ease',
+                transition: 'background 1s ease',
               }} />
               <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>
                 {isAnyPlaying ? 'LIVE' : 'IDLE'}

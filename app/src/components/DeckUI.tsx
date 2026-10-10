@@ -240,34 +240,42 @@ export function DeckUI({ id }: DeckUIProps) {
       {/* ─── Transport & Controls ─── */}
       <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
         
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <button onClick={() => {
-              // Basic SYNC: Match pitch to the other deck
-              const otherDeckId = id === 'A' ? 'B' : 'A';
-              const otherDeck = id === 'A' ? useStore.getState().deckB : useStore.getState().deckA;
-              updateDeck(id, { pitch: otherDeck.pitch });
-            }}
-            style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(57,255,20,0.1)', border: '2px solid rgba(57,255,20,0.5)', color: '#39ff14', fontSize: 9, fontWeight: 800, cursor: 'pointer' }}
-            title="Sync Pitch to Other Deck"
-          >
-            SYNC
-          </button>
-
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          {/* CUE (Skip Back) */}
           <button onClick={() => { deckObj.cueToStart(); if (isPlaying) updateDeck(id, { playing: false }); }}
-            style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,100,0,0.1)', border: '2px solid #ff6600', color: '#ff6600', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
-            CUE
+            style={{ width: 44, height: 44, background: 'transparent', border: 'none', color: '#ff6600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.8, transition: 'opacity 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0.8'}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="19 20 9 12 19 4 19 20"></polygon>
+              <rect x="5" y="4" width="3" height="16"></rect>
+            </svg>
           </button>
           
+          {/* PLAY / PAUSE */}
           <button onClick={() => {
               if (deckState.youtubeId && ytPlayer) { isPlaying ? ytPlayer.pauseVideo() : ytPlayer.playVideo(); } 
               else { engine.resume(); updateDeck(id, { playing: !isPlaying }); }
             }}
-            style={{ width: 50, height: 50, borderRadius: '50%', background: isPlaying ? accent : 'rgba(255,255,255,0.05)', border: `2px solid ${isPlaying ? accent : 'rgba(255,255,255,0.1)'}`, color: isPlaying ? '#000' : '#fff', fontSize: 20, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-            {isPlaying ? '⏸' : '▶'}
+            style={{ width: 44, height: 44, background: 'transparent', border: 'none', color: accent, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.9, transition: 'opacity 0.2s, color 3.5s ease' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0.9'}
+          >
+            {isPlaying ? (
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+            ) : (
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            )}
           </button>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           {/* Pitch Fader */}
           <div style={{ width: 100 }}>
             <input type="range" min="0.9" max="1.1" step="0.001" value={deckState.pitch}
@@ -277,12 +285,14 @@ export function DeckUI({ id }: DeckUIProps) {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setShowSearch(true)} style={{ width: 36, height: 36, borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', cursor: 'pointer' }}>
-              🔍
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={() => setShowSearch(true)} style={{ width: 32, height: 32, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
-            <button onClick={() => fileInputRef.current?.click()} style={{ width: 36, height: 36, borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
-              📁
+            <button onClick={() => fileInputRef.current?.click()} style={{ width: 32, height: 32, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
             </button>
           </div>
         </div>

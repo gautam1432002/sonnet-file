@@ -78,20 +78,19 @@ export function AmbientCanvas() {
 
       // Fill background very dark
       ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = '#020202';
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, w, h);
 
       // Draw liquid orbs
       ctx.globalCompositeOperation = 'screen';
       
       for (const orb of orbsRef.current) {
-        // Smooth hue interpolation
         const diff = ((orb.targetHue - orb.hue + 540) % 360) - 180;
         orb.hue += diff * 0.005;
 
         // Fluid drift with sine wave variation
-        orb.x += orb.vx + Math.sin(frameCount * 0.001 + orb.hue) * 0.5;
-        orb.y += orb.vy + Math.cos(frameCount * 0.001 + orb.hue) * 0.5;
+        orb.x += orb.vx + Math.sin(frameCount * 0.002 + orb.hue) * 0.8;
+        orb.y += orb.vy + Math.cos(frameCount * 0.002 + orb.hue) * 0.8;
 
         // Wrap around
         if (orb.x < -orb.radius) orb.x = w + orb.radius;
@@ -99,11 +98,11 @@ export function AmbientCanvas() {
         if (orb.y < -orb.radius) orb.y = h + orb.radius;
         if (orb.y > h + orb.radius) orb.y = -orb.radius;
 
-        // Radial gradient for deep solid liquid feel
+        // Radial gradient for deep solid liquid feel (super vibrant)
         const grad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.radius);
-        grad.addColorStop(0, `hsla(${orb.hue}, 90%, 25%, 0.6)`);
-        grad.addColorStop(0.4, `hsla(${(orb.hue + 20) % 360}, 100%, 15%, 0.3)`);
-        grad.addColorStop(1, `hsla(${(orb.hue + 40) % 360}, 100%, 5%, 0)`);
+        grad.addColorStop(0, `hsla(${orb.hue}, 100%, 50%, 0.7)`);
+        grad.addColorStop(0.4, `hsla(${(orb.hue + 20) % 360}, 100%, 30%, 0.4)`);
+        grad.addColorStop(1, `hsla(${(orb.hue + 40) % 360}, 100%, 10%, 0)`);
 
         ctx.beginPath();
         ctx.arc(orb.x, orb.y, orb.radius, 0, Math.PI * 2);
@@ -111,7 +110,18 @@ export function AmbientCanvas() {
         ctx.fill();
       }
 
-      // Shimmer Particles
+      // --- iOS 18 Edge Mirror Pot Effect ---
+      // Draw a massive dark vignette in the center to push colors to the edges
+      ctx.globalCompositeOperation = 'source-over';
+      const centerGrad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h) * 0.55);
+      centerGrad.addColorStop(0, 'rgba(0, 0, 0, 0.95)');
+      centerGrad.addColorStop(0.4, 'rgba(0, 0, 0, 0.8)');
+      centerGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      
+      ctx.fillStyle = centerGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Shimmer Particles on the edges
       ctx.globalCompositeOperation = 'lighter';
       
       // Spawn new particles occasionally
