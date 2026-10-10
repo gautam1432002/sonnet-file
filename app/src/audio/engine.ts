@@ -2,7 +2,7 @@ class AudioEngine {
   public ctx: AudioContext;
   private masterGain: GainNode;
   private limiter: DynamicsCompressorNode;
-  private analyser: AnalyserNode;
+  public masterAnalyser: AnalyserNode;
   
   constructor() {
     this.ctx = new window.AudioContext({ latencyHint: 'interactive' });
@@ -15,12 +15,13 @@ class AudioEngine {
     this.limiter.attack.value = 0.003;
     this.limiter.release.value = 0.1;
     
-    this.analyser = this.ctx.createAnalyser();
-    this.analyser.fftSize = 256;
+    this.masterAnalyser = this.ctx.createAnalyser();
+    this.masterAnalyser.fftSize = 256;
+    this.masterAnalyser.smoothingTimeConstant = 0.85;
     
     this.masterGain.connect(this.limiter);
-    this.limiter.connect(this.analyser);
-    this.analyser.connect(this.ctx.destination);
+    this.limiter.connect(this.masterAnalyser);
+    this.masterAnalyser.connect(this.ctx.destination);
   }
   
   resume() {
@@ -32,8 +33,8 @@ class AudioEngine {
   getMasterLevel(): { left: number; right: number } {
     // A more complete level meter would split channels.
     // For Phase 1, we return a single max peak for both.
-    const data = new Float32Array(this.analyser.fftSize);
-    this.analyser.getFloatTimeDomainData(data);
+    const data = new Float32Array(this.masterAnalyser.fftSize);
+    this.masterAnalyser.getFloatTimeDomainData(data);
     let max = 0;
     for (let i = 0; i < data.length; i++) {
       const val = Math.abs(data[i]);
