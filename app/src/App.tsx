@@ -7,6 +7,7 @@ import { CueUI } from './components/CueUI';
 import { AmbientCanvas } from './components/AmbientCanvas';
 import { TopInfoBar } from './components/TopInfoBar';
 import { GraphVisualizer } from './components/GraphVisualizer';
+import { YouTubeBrowser } from './components/YouTubeBrowser';
 import { engine } from './audio/engine';
 import { useAmbientColor } from './hooks/useAmbientColor';
 
@@ -52,7 +53,7 @@ export default function App() {
           boxSizing: 'border-box',
         }}
       >
-        <TopInfoBar />
+        <TopInfoBar onSearchClick={() => setIsBrowserOpen(true)} />
         
         {engine.masterAnalyser && (
           <GraphVisualizer analyser={engine.masterAnalyser} />

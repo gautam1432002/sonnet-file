@@ -41,11 +41,6 @@ export function DeckUI({ id }: DeckUIProps) {
   const [peaks, setPeaks] = useState<number[]>([]);
   const [pos, setPos] = useState(0);
   const [ytPlayer, setYtPlayer] = useState<YouTubePlayer | null>(null);
-  const [ytInput, setYtInput] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [echoActive, setEchoActive] = useState(false);
   const [virtualityActive, setVirtualityActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,32 +83,7 @@ export function DeckUI({ id }: DeckUIProps) {
     } catch { updateDeck(id, { trackName: 'ERROR' }); }
   };
 
-  const handleYtLoad = (e: React.FormEvent) => {
-    e.preventDefault();
-    const vid = extractYouTubeId(ytInput);
-    if (!vid) return;
-    deckObj.pause();
-    setPeaks([]);
-    updateDeck(id, { youtubeId: vid, trackName: `YT ID: ${vid}`, duration: 0, playing: true });
-    setYtInput('');
-    setShowSearch(false);
-  };
-
-  const performSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    setIsSearching(true);
-    try {
-      const res = await fetch(`/api/yt-search?q=${encodeURIComponent(searchQuery)}`);
-      setSearchResults(await res.json());
-    } catch { /* ignore */ }
-    setIsSearching(false);
-  };
-
-  const loadYTVideo = (v: any) => {
-    deckObj.pause(); setPeaks([]);
-    updateDeck(id, { youtubeId: v.videoId, trackName: v.title.toUpperCase(), artist: v.author, artworkUrl: v.thumbnail, duration: 0, playing: true });
-    setShowSearch(false);
+    } catch { updateDeck(id, { trackName: 'ERROR' }); }
   };
 
   const unloadYT = () => {
@@ -143,42 +113,10 @@ export function DeckUI({ id }: DeckUIProps) {
       onDragOver={e => { e.preventDefault(); }}
       onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
     >
-      {/* ─── Search Overlay ─── */}
-      {showSearch && (
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 50,
-          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)',
-          display: 'flex', flexDirection: 'column', padding: 20, gap: 16,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.2em', color: accent }}>SEARCH YOUTUBE</span>
-            <button onClick={() => setShowSearch(false)} style={{ color: '#fff', background: 'none', border: 'none', fontSize: 24, cursor: 'pointer' }}>✕</button>
-          </div>
-          <form onSubmit={performSearch} style={{ display: 'flex', gap: 10 }}>
-            <input
-              type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search tracks..." autoFocus
-              style={{ flex: 1, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 6, color: '#fff', padding: '12px 16px', outline: 'none', fontSize: 14 }}
-            />
-            <button type="submit" style={{ padding: '0 24px', borderRadius: 6, background: accent, color: '#000', fontWeight: 800, border: 'none', cursor: 'pointer' }}>GO</button>
-          </form>
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {isSearching ? <div style={{ color: accent, textAlign: 'center', padding: 40, letterSpacing: '0.1em' }}>SEARCHING...</div> :
-              searchResults.map((v, i) => (
-                <div key={i} onClick={() => loadYTVideo(v)} style={{
-                  display: 'flex', gap: 12, padding: 8, borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.02)',
-                }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>
-                  <img src={v.thumbnail} style={{ width: 100, height: 60, objectFit: 'cover', borderRadius: 4 }} alt="" />
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{v.title}</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{v.author}</div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
+      onDragOver={e => { e.preventDefault(); }}
+      onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+    >
       {/* ─── Deck Header ─── */}
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -352,10 +290,6 @@ export function DeckUI({ id }: DeckUIProps) {
           </div>
 
           <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={() => setShowSearch(true)} style={{ width: 32, height: 32, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            </button>
             <button onClick={() => fileInputRef.current?.click()} style={{ width: 32, height: 32, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>

@@ -2,7 +2,11 @@ import React from 'react';
 import { useStore } from '../store';
 import './TopInfoBar.css';
 
-export const TopInfoBar: React.FC = () => {
+interface TopInfoBarProps {
+  onSearchClick: () => void;
+}
+
+export const TopInfoBar: React.FC<TopInfoBarProps> = ({ onSearchClick }) => {
   const deckA = useStore((state) => state.deckA);
   const deckB = useStore((state) => state.deckB);
 
@@ -24,7 +28,12 @@ export const TopInfoBar: React.FC = () => {
       </div>
 
       {/* Center Mixer Brand / Clock */}
-      <div className="center-console">
+      <div className="center-console" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <button onClick={onSearchClick} style={{ 
+          background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 16px', borderRadius: '4px', color: '#fff', cursor: 'pointer', fontSize: 10, fontWeight: 'bold', letterSpacing: '0.1em', marginBottom: 4, transition: 'background 0.2s'
+        }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}>
+          SEARCH YOUTUBE
+        </button>
         <span style={{
           fontSize: 24,
           fontFamily: '"Dancing Script", cursive',
