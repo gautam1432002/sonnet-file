@@ -8,14 +8,21 @@ interface Orb {
   radius: number;
   hue: number;
   targetHue: number;
-  alpha: number;
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  vy: number;
+  size: number;
+  life: number;
+  maxLife: number;
+  hue: number;
 }
 
 function parseHsl(cssColor: string): number {
-  // Try to extract hue from hsl() or hex
   const hslMatch = cssColor.match(/hsl\((\d+)/);
   if (hslMatch) return parseInt(hslMatch[1]);
-  // fallback: hash the string to a hue
   let h = 0;
   for (let i = 0; i < cssColor.length; i++) h = (h * 31 + cssColor.charCodeAt(i)) & 0xffff;
   return h % 360;
@@ -24,12 +31,13 @@ function parseHsl(cssColor: string): number {
 export function AmbientCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const orbsRef = useRef<Orb[]>([]);
+  const particlesRef = useRef<Particle[]>([]);
   const rafRef = useRef<number>(0);
   const lastColorRef = useRef<string>('');
 
   useEffect(() => {
     const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d', { alpha: false })!;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -38,17 +46,16 @@ export function AmbientCanvas() {
     resize();
     window.addEventListener('resize', resize);
 
-    // Init orbs
+    // Initialize large liquid orbs
     const initOrbs = () => {
-      orbsRef.current = Array.from({ length: 7 }, (_, i) => ({
+      orbsRef.current = Array.from({ length: 5 }, (_, i) => ({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        radius: 200 + Math.random() * 300,
-        hue: (i * 51) % 360,
-        targetHue: (i * 51) % 360,
-        alpha: 0.12 + Math.random() * 0.08,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: (Math.random() - 0.5) * 0.8,
+        radius: canvas.width * (0.3 + Math.random() * 0.3), // Massive radius for fluid look
+        hue: (i * 60) % 360,
+        targetHue: (i * 60) % 360,
       }));
     };
     initOrbs();
@@ -59,44 +66,44 @@ export function AmbientCanvas() {
       const w = canvas.width;
       const h = canvas.height;
 
-      // Read current accent hue from CSS var
-      const accentColor = getComputedStyle(document.documentElement)
-        .getPropertyValue('--accent').trim();
-
-      if (accentColor !== lastColorRef.current) {
+      // Update hue target from CSS var
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+      if (accentColor !== lastColorRef.current && accentColor) {
         lastColorRef.current = accentColor;
         const baseHue = parseHsl(accentColor);
         orbsRef.current.forEach((orb, i) => {
-          orb.targetHue = (baseHue + i * 45) % 360;
+          orb.targetHue = (baseHue + (i * 35)) % 360; // Analogous/Split complementary
         });
       }
 
-      // Clear with near-black
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.92)';
+      // Fill background very dark
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#020202';
       ctx.fillRect(0, 0, w, h);
 
-      frameCount++;
-
+      // Draw liquid orbs
+      ctx.globalCompositeOperation = 'screen';
+      
       for (const orb of orbsRef.current) {
-        // Lerp hue toward target
+        // Smooth hue interpolation
         const diff = ((orb.targetHue - orb.hue + 540) % 360) - 180;
         orb.hue += diff * 0.005;
 
-        // Drift
-        orb.x += orb.vx;
-        orb.y += orb.vy;
+        // Fluid drift with sine wave variation
+        orb.x += orb.vx + Math.sin(frameCount * 0.001 + orb.hue) * 0.5;
+        orb.y += orb.vy + Math.cos(frameCount * 0.001 + orb.hue) * 0.5;
 
-        // Bounce softly
+        // Wrap around
         if (orb.x < -orb.radius) orb.x = w + orb.radius;
         if (orb.x > w + orb.radius) orb.x = -orb.radius;
         if (orb.y < -orb.radius) orb.y = h + orb.radius;
         if (orb.y > h + orb.radius) orb.y = -orb.radius;
 
-        // Draw radial gradient orb
+        // Radial gradient for deep solid liquid feel
         const grad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.radius);
-        grad.addColorStop(0, `hsla(${orb.hue}, 90%, 60%, ${orb.alpha})`);
-        grad.addColorStop(0.5, `hsla(${(orb.hue + 30) % 360}, 80%, 45%, ${orb.alpha * 0.5})`);
-        grad.addColorStop(1, `hsla(${(orb.hue + 60) % 360}, 70%, 30%, 0)`);
+        grad.addColorStop(0, `hsla(${orb.hue}, 90%, 25%, 0.6)`);
+        grad.addColorStop(0.4, `hsla(${(orb.hue + 20) % 360}, 100%, 15%, 0.3)`);
+        grad.addColorStop(1, `hsla(${(orb.hue + 40) % 360}, 100%, 5%, 0)`);
 
         ctx.beginPath();
         ctx.arc(orb.x, orb.y, orb.radius, 0, Math.PI * 2);
@@ -104,19 +111,46 @@ export function AmbientCanvas() {
         ctx.fill();
       }
 
-      // Shimmer particles
-      if (frameCount % 3 === 0) {
-        for (let i = 0; i < 3; i++) {
-          const px = Math.random() * w;
-          const py = Math.random() * h;
-          const hue = orbsRef.current[0]?.hue ?? 180;
-          ctx.beginPath();
-          ctx.arc(px, py, 1 + Math.random() * 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${hue}, 100%, 85%, ${Math.random() * 0.4})`;
-          ctx.fill();
+      // Shimmer Particles
+      ctx.globalCompositeOperation = 'lighter';
+      
+      // Spawn new particles occasionally
+      if (Math.random() < 0.3) {
+        const baseHue = orbsRef.current[0]?.hue ?? 180;
+        particlesRef.current.push({
+          x: Math.random() * w,
+          y: h + 10, // Start below screen
+          vy: -(0.2 + Math.random() * 0.8),
+          size: 0.5 + Math.random() * 1.5,
+          life: 0,
+          maxLife: 200 + Math.random() * 300,
+          hue: (baseHue + (Math.random() - 0.5) * 40) % 360
+        });
+      }
+
+      // Update and draw particles
+      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+        const p = particlesRef.current[i];
+        p.life++;
+        p.x += Math.sin(p.life * 0.02) * 0.3; // Wiggle
+        p.y += p.vy;
+
+        const fade = Math.sin((p.life / p.maxLife) * Math.PI); // 0 to 1 to 0
+        
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${fade * 0.8})`;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = `hsla(${p.hue}, 100%, 50%, ${fade})`;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        if (p.life >= p.maxLife || p.y < -10) {
+          particlesRef.current.splice(i, 1);
         }
       }
 
+      frameCount++;
       rafRef.current = requestAnimationFrame(draw);
     };
 
