@@ -2,10 +2,12 @@ import { engine } from './engine';
 import { cueSystem } from './cue';
 import { BufferSourceAdapter, MediaStreamAdapter } from './sources/SourceAdapter';
 import type { SourceAdapter } from './sources/SourceAdapter';
+import { EffectsChain } from './effects';
 
 export class Deck {
   public id: 'A' | 'B';
   public sourceAdapter: SourceAdapter | null = null;
+  public effects: EffectsChain;
   
   private trimNode: GainNode;
   private lowEq: BiquadFilterNode;
@@ -23,6 +25,7 @@ export class Deck {
     this.id = id;
     const ctx = engine.ctx;
     
+    this.effects = new EffectsChain(ctx);
     this.trimNode = ctx.createGain();
     
     this.lowEq = ctx.createBiquadFilter();
@@ -52,7 +55,8 @@ export class Deck {
     this.cueGain = ctx.createGain();
     this.cueGain.gain.value = 0;
     
-    // Chain: Trim -> Low -> Mid -> High -> FilterLP -> FilterHP -> Channel Fader -> Crossfader -> Master
+    // Chain: Effects -> Trim -> Low -> Mid -> High -> FilterLP -> FilterHP -> Channel Fader -> Crossfader -> Master
+    this.effects.output.connect(this.trimNode);
     this.trimNode.connect(this.lowEq);
     this.lowEq.connect(this.midEq);
     this.midEq.connect(this.highEq);
@@ -77,7 +81,7 @@ export class Deck {
       await adapter.load(fileOrStream);
       this.sourceAdapter = adapter;
     }
-    this.sourceAdapter.connect(this.trimNode);
+    this.sourceAdapter.connect(this.effects.input);
   }
 
   play() {

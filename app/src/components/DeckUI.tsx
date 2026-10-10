@@ -4,6 +4,7 @@ import { Waveform } from './Waveform';
 import { computePeaks } from '../audio/peaks';
 import { engine } from '../audio/engine';
 import { BufferSourceAdapter } from '../audio/sources/SourceAdapter';
+import { Knob } from './Knob';
 import YouTube from 'react-youtube';
 import type { YouTubePlayer } from 'react-youtube';
 
@@ -45,6 +46,8 @@ export function DeckUI({ id }: DeckUIProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [echoActive, setEchoActive] = useState(false);
+  const [virtualityActive, setVirtualityActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -121,6 +124,19 @@ export function DeckUI({ id }: DeckUIProps) {
   const progressPct = deckState.duration > 0 ? Math.min(100, (pos / deckState.duration) * 100) : 0;
   const jogRot = (pos / 2) * 360;
   const isPlaying = deckState.playing;
+  const activeColor = id === 'A' ? 'var(--deck-a-accent)' : 'var(--deck-b-accent)';
+
+  const handleEchoToggle = () => {
+    const newState = !echoActive;
+    setEchoActive(newState);
+    deckObj.effects.toggleEcho(newState);
+  };
+
+  const handleVirtualityToggle = () => {
+    const newState = !virtualityActive;
+    setVirtualityActive(newState);
+    deckObj.effects.toggleVirtuality(newState);
+  };
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
@@ -187,47 +203,97 @@ export function DeckUI({ id }: DeckUIProps) {
         </div>
       </div>
 
-      {/* ─── Main Visual ─── */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', overflow: 'hidden' }}>
-        {deckState.youtubeId ? (
-          <div style={{ width: '100%', position: 'relative' }}>
-            <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-              <YouTube
-                videoId={deckState.youtubeId}
-                opts={{ width: '100%', height: '220', playerVars: { autoplay: 1, controls: 1, modestbranding: 1 } }}
-                onReady={e => { setYtPlayer(e.target); updateDeck(id, { duration: e.target.getDuration() }); }}
-                onStateChange={e => {
-                  if (e.data === 1) updateDeck(id, { playing: true });
-                  else if (e.data === 2 || e.data === 0) updateDeck(id, { playing: false });
-                }}
-              />
+      {/* ─── Main Visual & Effects ─── */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', gap: 16, overflow: 'hidden' }}>
+        
+        {/* Platter / Video */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          {deckState.youtubeId ? (
+            <div style={{ width: '100%', position: 'relative' }}>
+              <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                <YouTube
+                  videoId={deckState.youtubeId}
+                  opts={{ width: '100%', height: '220', playerVars: { autoplay: 1, controls: 1, modestbranding: 1 } }}
+                  onReady={e => { setYtPlayer(e.target); updateDeck(id, { duration: e.target.getDuration() }); }}
+                  onStateChange={e => {
+                    if (e.data === 1) updateDeck(id, { playing: true });
+                    else if (e.data === 2 || e.data === 0) updateDeck(id, { playing: false });
+                  }}
+                />
+              </div>
+              <button onClick={unloadYT} style={{
+                position: 'absolute', top: -30, right: 0, fontSize: 10, color: '#ff4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, letterSpacing: '0.1em'
+              }}>EJECT YT</button>
             </div>
-            <button onClick={unloadYT} style={{
-              position: 'absolute', top: -30, right: 0, fontSize: 10, color: '#ff4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, letterSpacing: '0.1em'
-            }}>EJECT YT</button>
-          </div>
-        ) : (
-          <div style={{
-            width: 180, height: 180, borderRadius: '50%',
-            transform: `rotate(${jogRot}deg)`,
-            background: 'radial-gradient(circle, rgba(30,30,30,1) 0%, rgba(10,10,10,1) 100%)',
-            border: '2px solid rgba(255,255,255,0.05)',
-            boxShadow: isPlaying ? `0 0 40px rgba(0,0,0,0.8), inset 0 0 0 2px ${accent}` : '0 10px 30px rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            position: 'relative',
-            transition: 'box-shadow 3.5s ease',
-          }}>
-            <div style={{ position: 'absolute', inset: 15, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.05)' }} />
-            <div style={{ position: 'absolute', inset: 30, borderRadius: '50%', border: '1px dashed rgba(255,255,255,0.1)' }} />
+          ) : (
             <div style={{
-              width: 60, height: 60, borderRadius: '50%',
-              background: '#050505', border: `2px solid ${isPlaying ? accent : 'rgba(255,255,255,0.1)'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color 3.5s ease'
+              width: 180, height: 180, borderRadius: '50%',
+              transform: `rotate(${jogRot}deg)`,
+              background: 'radial-gradient(circle, rgba(30,30,30,1) 0%, rgba(10,10,10,1) 100%)',
+              border: '2px solid rgba(255,255,255,0.05)',
+              boxShadow: isPlaying ? `0 0 40px rgba(0,0,0,0.8), inset 0 0 0 2px ${activeColor}` : '0 10px 30px rgba(0,0,0,0.5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative',
+              transition: 'box-shadow 3.5s ease',
             }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: isPlaying ? accent : 'rgba(255,255,255,0.2)' }} />
+              <div style={{ position: 'absolute', inset: 15, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.05)' }} />
+              <div style={{ position: 'absolute', inset: 30, borderRadius: '50%', border: '1px dashed rgba(255,255,255,0.1)' }} />
+              <div style={{
+                width: 60, height: 60, borderRadius: '50%',
+                background: '#050505', border: `2px solid ${isPlaying ? activeColor : 'rgba(255,255,255,0.1)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color 3.5s ease'
+              }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: isPlaying ? activeColor : 'rgba(255,255,255,0.2)' }} />
+              </div>
             </div>
+          )}
+        </div>
+
+        {/* Effects Panel */}
+        <div style={{ 
+          display: 'flex', gap: 16, padding: 12, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' 
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Knob 
+              label="GAIN" min={0} max={2} step={0.1} value={1} size={32}
+              onChange={(val) => deckObj.effects.setGain(val)} color={activeColor}
+            />
+            <Knob 
+              label="TREB" min={-40} max={15} step={1} value={0} size={32}
+              onChange={(val) => deckObj.effects.setTreble(val)} color={activeColor}
+            />
+            <Knob 
+              label="BASS" min={-40} max={15} step={1} value={0} size={32}
+              onChange={(val) => deckObj.effects.setBass(val)} color={activeColor}
+            />
           </div>
-        )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
+            <button 
+              onClick={handleEchoToggle}
+              style={{
+                padding: '12px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 10, transition: 'all 0.2s',
+                border: `1px solid ${echoActive ? activeColor : 'rgba(255,255,255,0.1)'}`,
+                backgroundColor: echoActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                color: echoActive ? activeColor : 'rgba(255,255,255,0.5)', fontWeight: 800, letterSpacing: '0.1em'
+              }}
+            >
+              ECHO
+            </button>
+            <button 
+              onClick={handleVirtualityToggle}
+              style={{
+                padding: '12px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 10, transition: 'all 0.2s',
+                border: `1px solid ${virtualityActive ? activeColor : 'rgba(255,255,255,0.1)'}`,
+                backgroundColor: virtualityActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                color: virtualityActive ? activeColor : 'rgba(255,255,255,0.5)', fontWeight: 800, letterSpacing: '0.1em'
+              }}
+            >
+              VIRTUAL
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* ─── Waveform ─── */}
