@@ -17,17 +17,7 @@ function formatTime(secs: number) {
   return `${m}:${s}`;
 }
 
-function extractYouTubeId(input: string): string | null {
-  const t = input.trim();
-  if (/^[a-zA-Z0-9_-]{11}$/.test(t)) return t;
-  try {
-    const url = new URL(t);
-    if (url.hostname.includes('youtu.be')) return url.pathname.slice(1).split('?')[0];
-    if (url.hostname.includes('youtube.com')) return url.searchParams.get('v');
-  } catch { /* not a URL */ }
-  const m = t.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
+
 
 const accent = 'var(--accent)';
 
@@ -83,9 +73,6 @@ export function DeckUI({ id }: DeckUIProps) {
     } catch { updateDeck(id, { trackName: 'ERROR' }); }
   };
 
-    } catch { updateDeck(id, { trackName: 'ERROR' }); }
-  };
-
   const unloadYT = () => {
     deckObj.pause(); if (ytAdapter) ytAdapter.pause(); setPeaks([]);
     updateDeck(id, { youtubeId: null, trackName: null, playing: false });
@@ -109,10 +96,6 @@ export function DeckUI({ id }: DeckUIProps) {
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
-      onDragOver={e => { e.preventDefault(); }}
-      onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-    >
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
       onDragOver={e => { e.preventDefault(); }}
       onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
@@ -241,7 +224,7 @@ export function DeckUI({ id }: DeckUIProps) {
       {/* ─── Waveform ─── */}
       {peaks.length > 0 && !deckState.youtubeId && (
         <div style={{ padding: '0 20px', height: 60, flexShrink: 0, marginBottom: 10 }}>
-          <Waveform peaks={peaks} position={pos} duration={deckState.duration} />
+          <Waveform peaks={peaks} position={pos} duration={deckState.duration} onSeek={() => {}} />
         </div>
       )}
 

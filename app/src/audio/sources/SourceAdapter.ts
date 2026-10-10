@@ -103,6 +103,7 @@ export class MediaElementAdapter implements SourceAdapter {
   stop(): void { throw new Error('not implemented in Phase 1'); }
   getPosition(): number { throw new Error('not implemented in Phase 1'); }
   setPlaybackRate(): void { throw new Error('not implemented in Phase 1'); }
+  connect(): void { throw new Error('not implemented in Phase 1'); }
 }
 
 export class MediaStreamAdapter implements SourceAdapter {

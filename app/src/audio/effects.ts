@@ -19,7 +19,10 @@ export class EffectsChain {
   private merger: ChannelMergerNode;
   private widenDelay: DelayNode;
 
-  constructor(private ctx: AudioContext) {
+  private ctx: AudioContext;
+
+  constructor(ctx: AudioContext) {
+    this.ctx = ctx;
     this.input = ctx.createGain();
     this.output = ctx.createGain();
 

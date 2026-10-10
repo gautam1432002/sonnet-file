@@ -6,7 +6,7 @@ interface GraphVisualizerProps {
 
 export const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ analyser }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number>(0);
 
   useEffect(() => {
     if (!analyser || !canvasRef.current) return;

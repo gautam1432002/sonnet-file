@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from './store';
 import { DeckUI } from './components/DeckUI';
 import { MixerUI } from './components/MixerUI';
@@ -17,8 +17,21 @@ export default function App() {
   const updateDeck = useStore(state => state.updateDeck);
   const crossfader = useStore(state => state.crossfader);
   const setCrossfader = useStore(state => state.setCrossfader);
+  const [isBrowserOpen, setIsBrowserOpen] = useState(false);
 
   useAmbientColor(deckA.playing, deckB.playing, deckA.trackName, deckB.trackName);
+
+  const handleLoadTrack = (deckId: 'A' | 'B', track: any) => {
+    updateDeck(deckId, {
+      youtubeId: track.id,
+      trackName: track.title.toUpperCase(),
+      artist: track.artist,
+      artworkUrl: track.thumbnail,
+      duration: 0,
+      playing: true
+    });
+    setIsBrowserOpen(false);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -31,8 +44,6 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [crossfader, updateDeck, deckA.playing, deckB.playing]);
-
-  const isAnyPlaying = deckA.playing || deckB.playing;
 
   return (
     <>
@@ -96,6 +107,12 @@ export default function App() {
           </div>
         </div>
       </div>
+      
+      <YouTubeBrowser 
+        isOpen={isBrowserOpen} 
+        onClose={() => setIsBrowserOpen(false)} 
+        onLoadTrack={handleLoadTrack}
+      />
     </>
   );
 }

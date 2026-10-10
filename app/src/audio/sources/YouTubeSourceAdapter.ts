@@ -10,10 +10,15 @@ export class YouTubeSourceAdapter {
   public isReady: boolean = false;
   private queuedVideoId: string | null = null;
 
+  private containerId: string;
+  private onStateChange?: (state: number) => void;
+
   constructor(
-    private containerId: string,
-    private onStateChange?: (state: number) => void
+    containerId: string,
+    onStateChange?: (state: number) => void
   ) {
+    this.containerId = containerId;
+    this.onStateChange = onStateChange;
     this.initApi();
   }
 

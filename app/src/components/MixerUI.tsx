@@ -75,7 +75,7 @@ export function MixerUI() {
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', textAlign: 'center', letterSpacing: '0.1em', fontWeight: 600 }}>CF CURVE</span>
-            {(['equal_power', 'linear', 'scratch'] as const).map(c => (
+            {(['equal_power', 'sharp_cut'] as const).map(c => (
               <button key={c} onClick={() => setCrossfaderCurve(c)} style={{
                 padding: '6px 10px', borderRadius: 4, fontSize: 9, fontWeight: 700,
                 background: crossfaderCurve === c ? 'var(--accent)' : 'transparent',
@@ -83,7 +83,7 @@ export function MixerUI() {
                 border: `1px solid ${crossfaderCurve === c ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`,
                 cursor: 'pointer', transition: 'all 0.2s'
               }}>
-                {c === 'equal_power' ? 'EQ POWER' : c.toUpperCase()}
+                {c === 'equal_power' ? 'EQ POWER' : 'SHARP CUT'}
               </button>
             ))}
           </div>

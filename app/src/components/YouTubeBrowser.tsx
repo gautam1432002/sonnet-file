@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useYouTubeSearch, YouTubeResult } from '../hooks/useYouTubeSearch';
+import { useYouTubeSearch } from '../hooks/useYouTubeSearch';
+import type { YouTubeResult } from '../hooks/useYouTubeSearch';
 
 interface YouTubeBrowserProps {
   isOpen: boolean;

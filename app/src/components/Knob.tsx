@@ -3,13 +3,17 @@ import type { KeyboardEvent, PointerEvent } from 'react';
 
 interface KnobProps {
   label: string;
-  value: number; // 0 to 1
+  value: number; // For custom ranges, use min and max
+  min?: number;
+  max?: number;
+  step?: number;
+  color?: string;
   onChange: (val: number) => void;
   onDoubleClick?: () => void;
   size?: number;
 }
 
-export function Knob({ label, value, onChange, onDoubleClick, size = 48 }: KnobProps) {
+export function Knob({ label, value, min = 0, max = 1, step = 0.05, color = 'var(--accent)', onChange, onDoubleClick, size = 48 }: KnobProps) {
   const [isDragging, setIsDragging] = useState(false);
   const startY = useRef(0);
   const startVal = useRef(value);
@@ -24,9 +28,10 @@ export function Knob({ label, value, onChange, onDoubleClick, size = 48 }: KnobP
   const handlePointerMove = (e: PointerEvent) => {
     if (!isDragging) return;
     const deltaY = startY.current - e.clientY;
-    const sensitivity = 0.005;
+    const range = max - min;
+    const sensitivity = range * 0.005; // Base sensitivity off range
     let newVal = startVal.current + deltaY * sensitivity;
-    newVal = Math.max(0, Math.min(1, newVal));
+    newVal = Math.max(min, Math.min(max, newVal));
     onChange(newVal);
   };
 
@@ -36,20 +41,20 @@ export function Knob({ label, value, onChange, onDoubleClick, size = 48 }: KnobP
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    const step = 0.05;
     if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
-      onChange(Math.min(1, value + step));
+      onChange(Math.min(max, value + step));
     } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
-      onChange(Math.max(0, value - step));
+      onChange(Math.max(min, value - step));
     } else if (e.key === 'Home') {
-      onChange(1);
+      onChange(max);
     } else if (e.key === 'End') {
-      onChange(0);
+      onChange(min);
     }
   };
 
-  // Convert 0-1 to angle: -135deg to +135deg
-  const angle = -135 + (value * 270);
+  // Convert value to angle: -135deg to +135deg
+  const normalizedValue = (value - min) / (max - min);
+  const angle = -135 + (normalizedValue * 270);
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -84,7 +89,7 @@ export function Knob({ label, value, onChange, onDoubleClick, size = 48 }: KnobP
             strokeWidth="2" 
           />
           <g transform={`rotate(${angle} 50 50)`}>
-            <line x1="50" y1="50" x2="50" y2="20" stroke="var(--accent)" strokeWidth="4" strokeLinecap="round" />
+            <line x1="50" y1="50" x2="50" y2="20" stroke={color} strokeWidth="4" strokeLinecap="round" />
           </g>
         </svg>
       </div>
