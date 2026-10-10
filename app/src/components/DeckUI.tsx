@@ -5,8 +5,8 @@ import { computePeaks } from '../audio/peaks';
 import { engine } from '../audio/engine';
 import { BufferSourceAdapter } from '../audio/sources/SourceAdapter';
 import { Knob } from './Knob';
-import YouTube from 'react-youtube';
-import type { YouTubePlayer } from 'react-youtube';
+import { YouTubeDeckPlayer } from './YouTubeDeckPlayer';
+import { YouTubeSourceAdapter } from '../audio/sources/YouTubeSourceAdapter';
 
 interface DeckUIProps { id: 'A' | 'B'; }
 
@@ -40,7 +40,7 @@ export function DeckUI({ id }: DeckUIProps) {
 
   const [peaks, setPeaks] = useState<number[]>([]);
   const [pos, setPos] = useState(0);
-  const [ytPlayer, setYtPlayer] = useState<YouTubePlayer | null>(null);
+  const [ytAdapter, setYtAdapter] = useState<YouTubeSourceAdapter | null>(null);
   const [echoActive, setEchoActive] = useState(false);
   const [virtualityActive, setVirtualityActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,21 +48,21 @@ export function DeckUI({ id }: DeckUIProps) {
   useEffect(() => {
     let h: number;
     const loop = () => {
-      setPos(deckState.youtubeId && ytPlayer ? ytPlayer.getCurrentTime() || 0 : deckObj.getPosition());
+      setPos(deckState.youtubeId && ytAdapter ? ytAdapter.getCurrentTime() || 0 : deckObj.getPosition());
       h = requestAnimationFrame(loop);
     };
     loop();
     return () => cancelAnimationFrame(h);
-  }, [deckObj, deckState.youtubeId, ytPlayer]);
+  }, [deckObj, deckState.youtubeId, ytAdapter]);
 
   useEffect(() => {
-    if (!ytPlayer) return;
+    if (!ytAdapter) return;
     import('../audio/crossfader').then(({ getCrossfaderGains }) => {
       const gains = getCrossfaderGains(crossfader, crossfaderCurve);
       const xg = id === 'A' ? gains.a : gains.b;
-      ytPlayer.setVolume(deckState.volume * (deckState.trim / 2) * xg * 100);
+      ytAdapter.setVolume(deckState.volume * (deckState.trim / 2) * xg * 100);
     });
-  }, [ytPlayer, deckState.volume, deckState.trim, crossfader, crossfaderCurve, id]);
+  }, [ytAdapter, deckState.volume, deckState.trim, crossfader, crossfaderCurve, id]);
 
   const handleFile = async (file: File) => {
     updateDeck(id, { trackName: 'LOADING...' });
@@ -87,7 +87,7 @@ export function DeckUI({ id }: DeckUIProps) {
   };
 
   const unloadYT = () => {
-    deckObj.pause(); setYtPlayer(null); setPeaks([]);
+    deckObj.pause(); if (ytAdapter) ytAdapter.pause(); setPeaks([]);
     updateDeck(id, { youtubeId: null, trackName: null, playing: false });
   };
 
@@ -148,17 +148,21 @@ export function DeckUI({ id }: DeckUIProps) {
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
           {deckState.youtubeId ? (
             <div style={{ width: '100%', position: 'relative' }}>
-              <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-                <YouTube
-                  videoId={deckState.youtubeId}
-                  opts={{ width: '100%', height: '220', playerVars: { autoplay: 1, controls: 1, modestbranding: 1 } }}
-                  onReady={e => { setYtPlayer(e.target); updateDeck(id, { duration: e.target.getDuration() }); }}
-                  onStateChange={e => {
-                    if (e.data === 1) updateDeck(id, { playing: true });
-                    else if (e.data === 2 || e.data === 0) updateDeck(id, { playing: false });
-                  }}
-                />
-              </div>
+              <YouTubeDeckPlayer 
+                deckId={id} 
+                videoId={deckState.youtubeId} 
+                onAdapterReady={(adapter) => {
+                  setYtAdapter(adapter);
+                  if (deckState.duration === 0) updateDeck(id, { duration: adapter.getDuration() });
+                }}
+                onStateChange={(state) => {
+                  if (state === 1) {
+                    if (ytAdapter) updateDeck(id, { playing: true, duration: ytAdapter.getDuration() });
+                  } else if (state === 2 || state === 0) {
+                    updateDeck(id, { playing: false });
+                  }
+                }}
+              />
               <button onClick={unloadYT} style={{
                 position: 'absolute', top: -30, right: 0, fontSize: 10, color: '#ff4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, letterSpacing: '0.1em'
               }}>EJECT YT</button>
@@ -259,10 +263,10 @@ export function DeckUI({ id }: DeckUIProps) {
           
           {/* PLAY / PAUSE */}
           <button onClick={() => {
-              if (deckState.youtubeId && ytPlayer) { isPlaying ? ytPlayer.pauseVideo() : ytPlayer.playVideo(); } 
+              if (deckState.youtubeId && ytAdapter) { isPlaying ? ytAdapter.pause() : ytAdapter.play(); } 
               else { engine.resume(); updateDeck(id, { playing: !isPlaying }); }
             }}
-            style={{ width: 44, height: 44, background: 'transparent', border: 'none', color: accent, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.9, transition: 'opacity 0.2s, color 3.5s ease' }}
+            style={{ width: 44, height: 44, background: 'transparent', border: 'none', color: activeColor, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.9, transition: 'opacity 0.2s, color 3.5s ease' }}
             onMouseEnter={e => e.currentTarget.style.opacity = '1'}
             onMouseLeave={e => e.currentTarget.style.opacity = '0.9'}
           >
@@ -283,8 +287,15 @@ export function DeckUI({ id }: DeckUIProps) {
           {/* Pitch Fader */}
           <div style={{ width: 100 }}>
             <input type="range" min="0.9" max="1.1" step="0.001" value={deckState.pitch}
-              onChange={e => updateDeck(id, { pitch: parseFloat(e.target.value) })}
-              onDoubleClick={() => updateDeck(id, { pitch: 1 })}
+              onChange={e => {
+                const p = parseFloat(e.target.value);
+                updateDeck(id, { pitch: p });
+                if (ytAdapter) ytAdapter.setPlaybackRate(p);
+              }}
+              onDoubleClick={() => {
+                updateDeck(id, { pitch: 1 });
+                if (ytAdapter) ytAdapter.setPlaybackRate(1);
+              }}
               className="pitch-fader" style={{ width: '100%' }}
             />
           </div>
