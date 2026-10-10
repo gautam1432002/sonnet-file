@@ -16,9 +16,21 @@
 
 html, body {
   @apply h-full w-full m-0 p-0 overflow-hidden text-white font-sans;
-  background: linear-gradient(135deg, var(--bg-from), var(--bg-via), var(--bg-to));
-  background-size: 200% 200%;
-  transition: background 1s ease;
+  background: linear-gradient(-45deg, var(--bg-from), var(--bg-via), var(--bg-to), var(--bg-from));
+  background-size: 400% 400%;
+  animation: ambientGradient 15s ease infinite;
+}
+
+@keyframes ambientGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 #root {
