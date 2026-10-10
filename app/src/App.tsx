@@ -1,27 +1,25 @@
 import { useEffect } from 'react';
 import { useStore } from './store';
-import { THEMES } from './themes';
 import { DeckUI } from './components/DeckUI';
 import { MixerUI } from './components/MixerUI';
 import { MasterUI } from './components/MasterUI';
 import { CueUI } from './components/CueUI';
 import { engine } from './audio/engine';
+import { useAmbientColor } from './hooks/useAmbientColor';
 
 export default function App() {
-  const themeId = useStore(state => state.theme);
-  const setTheme = useStore(state => state.setTheme);
-  
   const deckA = useStore(state => state.deckA);
   const deckB = useStore(state => state.deckB);
   const updateDeck = useStore(state => state.updateDeck);
   const crossfader = useStore(state => state.crossfader);
   const setCrossfader = useStore(state => state.setCrossfader);
 
+  // Dynamic ambient background based on playing state
+  useAmbientColor(deckA.playing, deckB.playing, deckA.trackName, deckB.trackName);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts if focus is on an input or something else
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'SELECT') return;
-
       if (e.key.toLowerCase() === 'q') {
         engine.resume();
         updateDeck('A', { playing: !deckA.playing });
@@ -34,79 +32,69 @@ export default function App() {
         setCrossfader(Math.min(1, crossfader + 0.05));
       }
     };
-    
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [crossfader, updateDeck]);
+  }, [crossfader, updateDeck, deckA.playing, deckB.playing]);
 
-  const handleThemeChange = (id: number) => {
-    setTheme(id);
-    const savedTheme = THEMES.find(t => t.id === id) || THEMES[0];
-    document.documentElement.style.setProperty('--bg-from', savedTheme.from);
-    document.documentElement.style.setProperty('--bg-via', savedTheme.via);
-    document.documentElement.style.setProperty('--bg-to', savedTheme.to);
-    document.documentElement.style.setProperty('--accent', savedTheme.accent);
-  };
+  const isAnyPlaying = deckA.playing || deckB.playing;
 
   return (
-    <div className="min-w-[1280px] min-h-screen p-6 flex flex-col gap-6">
-      <header className="flex justify-between items-center glass-panel px-6 py-4">
-        <h1 className="text-3xl font-bold tracking-tight text-[var(--accent)] drop-shadow-md">
-          Sonnet File
-        </h1>
-        <div className="flex gap-2">
-          {THEMES.map(t => (
-            <button
-              key={t.id}
-              onClick={() => handleThemeChange(t.id)}
-              className={`px-3 py-1 text-sm font-medium rounded-full transition-all border ${
-                themeId === t.id 
-                  ? 'bg-[var(--accent)] text-[#0b1026] border-[var(--accent)] shadow-[0_0_10px_var(--accent)]' 
-                  : 'bg-black/30 border-[var(--glass-border)] hover:bg-black/50 text-white'
-              }`}
-            >
-              Day {t.id}
-            </button>
-          ))}
+    <div className="min-w-[1280px] min-h-screen flex flex-col" style={{ gap: 0 }}>
+
+      {/* Header */}
+      <header className="flex justify-between items-center px-8 py-4 border-b border-white/5" style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(20px)' }}>
+        <div className="flex items-center gap-3">
+          <span className="text-2xl font-black tracking-tighter" style={{ color: 'var(--accent)', textShadow: '0 0 20px var(--accent)' }}>
+            SONNET FILE
+          </span>
+          <span className="text-xs font-mono text-white/30 tracking-widest mt-1">DJ STUDIO</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Live status indicator */}
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full transition-all duration-700 ${isAnyPlaying ? 'bg-green-400 shadow-[0_0_8px_#4ade80]' : 'bg-white/20'}`} />
+            <span className="text-xs font-mono text-white/40 tracking-widest">
+              {isAnyPlaying ? 'LIVE' : 'IDLE'}
+            </span>
+          </div>
+
+          {/* Keyboard shortcuts hint */}
+          <div className="flex gap-2 text-xs font-mono text-white/20">
+            <span className="bg-white/5 px-2 py-1 rounded">Q</span>
+            <span className="text-white/10">Deck A</span>
+            <span className="bg-white/5 px-2 py-1 rounded">P</span>
+            <span className="text-white/10">Deck B</span>
+            <span className="bg-white/5 px-2 py-1 rounded">← →</span>
+            <span className="text-white/10">Xfader</span>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 grid grid-cols-4 gap-6 auto-rows-max">
-        {/* Row 1: Decks and Mixer */}
-        <div className="col-span-1">
+      {/* Main Layout: Deck A | Mixer | Deck B */}
+      <main className="flex flex-1 overflow-hidden">
+        {/* Deck A */}
+        <div className="flex-1 min-w-[320px] max-w-[380px] flex flex-col" style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
           <DeckUI id="A" />
         </div>
-        <div className="col-span-2">
+
+        {/* Center: Mixer */}
+        <div className="flex-1 flex flex-col" style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
           <MixerUI />
         </div>
-        <div className="col-span-1">
+
+        {/* Deck B */}
+        <div className="flex-1 min-w-[320px] max-w-[380px] flex flex-col" style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
           <DeckUI id="B" />
         </div>
 
-        {/* Row 2: Master, Cue, and Placeholders */}
-        <div className="col-span-1 flex flex-col gap-6">
-          <MasterUI />
-          <CueUI />
-        </div>
-        
-        <div className="col-span-2 grid grid-cols-2 gap-6">
-          <div className="glass-panel p-6 flex items-center justify-center opacity-60 border-dashed border-2 border-[var(--glass-border)]">
-            <span className="font-mono text-sm tracking-widest text-center">Banger Pads<br/>(Phase 3)</span>
+        {/* Right sidebar: Master + Cue */}
+        <div className="w-52 flex flex-col gap-0" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="flex-1 p-3 border-b border-white/5">
+            <MasterUI />
           </div>
-          <div className="glass-panel p-6 flex items-center justify-center opacity-60 border-dashed border-2 border-[var(--glass-border)]">
-            <span className="font-mono text-sm tracking-widest text-center">Aura Queue<br/>(Phase 3)</span>
-          </div>
-          <div className="glass-panel p-6 flex items-center justify-center opacity-60 border-dashed border-2 border-[var(--glass-border)]">
-            <span className="font-mono text-sm tracking-widest text-center">Suggestions<br/>(Phase 4)</span>
-          </div>
-          <div className="glass-panel p-6 flex items-center justify-center opacity-60 border-dashed border-2 border-[var(--glass-border)]">
-            <span className="font-mono text-sm tracking-widest text-center">Night Planner<br/>(Phase 5)</span>
-          </div>
-        </div>
-
-        <div className="col-span-1">
-          <div className="glass-panel p-6 h-full min-h-[300px] flex items-center justify-center opacity-60 border-dashed border-2 border-[var(--glass-border)]">
-            <span className="font-mono text-sm tracking-widest text-center">Live Inputs + YouTube<br/>(Phase 6)</span>
+          <div className="flex-1 p-3">
+            <CueUI />
           </div>
         </div>
       </main>

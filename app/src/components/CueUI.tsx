@@ -6,7 +6,7 @@ export function CueUI() {
   const deckACue = useStore(state => state.deckA.cueOn);
   const deckBCue = useStore(state => state.deckB.cueOn);
   const updateDeck = useStore(state => state.updateDeck);
-  
+
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string>('default');
   const [supported, setSupported] = useState(true);
@@ -15,66 +15,61 @@ export function CueUI() {
     navigator.mediaDevices.enumerateDevices().then(devs => {
       setDevices(devs.filter(d => d.kind === 'audiooutput'));
     }).catch(console.error);
-
-    navigator.mediaDevices.addEventListener('devicechange', () => {
-      navigator.mediaDevices.enumerateDevices().then(devs => {
-        setDevices(devs.filter(d => d.kind === 'audiooutput'));
-      });
-    });
-    
-    // Check if setSinkId is supported on Audio element
-    if (!('setSinkId' in HTMLAudioElement.prototype)) {
-      setSupported(false);
-    }
+    if (!('setSinkId' in HTMLAudioElement.prototype)) setSupported(false);
   }, []);
 
   const handleDeviceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     setSelectedDevice(id);
     const success = await cueSystem.setSinkId(id);
-    if (!success) {
-      alert('Cue output device change failed. Make sure you select a different device from the master.');
-    }
+    if (!success) alert('Cue output device change failed.');
   };
 
   return (
-    <div className="glass-panel p-4 flex flex-col gap-4">
-      <h3 className="font-bold text-[var(--accent)] uppercase tracking-wider text-sm">Headphones (Cue)</h3>
-      
+    <div className="h-full flex flex-col gap-3">
+      <span className="text-[9px] font-mono tracking-widest text-white/30 uppercase">Cue / Headphones</span>
+
       {!supported ? (
-        <div className="text-red-400 text-xs flex-1 bg-red-400/10 p-2 rounded">
-          Your browser does not support secondary audio outputs (setSinkId). Cue monitoring disabled.
-        </div>
+        <p className="text-[10px] text-red-400/70 bg-red-400/10 p-2 rounded-lg leading-relaxed">
+          Browser doesn't support secondary audio outputs.
+        </p>
       ) : devices.length <= 1 ? (
-        <div className="text-yellow-400 text-xs flex-1 bg-yellow-400/10 p-2 rounded">
-          Only one audio output detected. Connect headphones to use cue monitoring.
-        </div>
+        <p className="text-[10px] text-yellow-400/60 bg-yellow-400/10 p-2 rounded-lg leading-relaxed">
+          Connect headphones to enable cue monitoring.
+        </p>
       ) : (
         <>
-          <div className="flex gap-4 flex-1 items-center justify-center">
-            <button 
-              onClick={() => updateDeck('A', { cueOn: !deckACue })}
-              className={`w-16 h-12 rounded font-bold transition-colors ${deckACue ? 'bg-[var(--accent)] text-[#0b1026]' : 'bg-black/50 border border-[var(--glass-border)]'}`}
-            >
-              CUE A
-            </button>
-            <button 
-              onClick={() => updateDeck('B', { cueOn: !deckBCue })}
-              className={`w-16 h-12 rounded font-bold transition-colors ${deckBCue ? 'bg-[var(--accent)] text-[#0b1026]' : 'bg-black/50 border border-[var(--glass-border)]'}`}
-            >
-              CUE B
-            </button>
+          <div className="flex gap-2 justify-center">
+            {(['A', 'B'] as const).map(deck => {
+              const isOn = deck === 'A' ? deckACue : deckBCue;
+              return (
+                <button
+                  key={deck}
+                  onClick={() => updateDeck(deck, { cueOn: !isOn })}
+                  className="flex-1 py-2 rounded-lg font-bold text-xs transition-all"
+                  style={{
+                    background: isOn ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${isOn ? 'var(--accent)' : 'rgba(255,255,255,0.08)'}`,
+                    color: isOn ? '#000' : 'rgba(255,255,255,0.4)',
+                    boxShadow: isOn ? '0 0 12px var(--accent)' : 'none',
+                  }}
+                >
+                  CUE {deck}
+                </button>
+              );
+            })}
           </div>
-          
+
           <div className="flex flex-col gap-1 mt-auto">
-            <label className="text-xs text-gray-400">Cue Device</label>
-            <select 
-              value={selectedDevice} 
+            <span className="text-[9px] text-white/20 font-mono">CUE OUTPUT</span>
+            <select
+              value={selectedDevice}
               onChange={handleDeviceChange}
-              className="bg-black/50 border border-[var(--glass-border)] rounded px-2 py-1 text-sm outline-none w-full"
+              className="text-[10px] rounded px-1 py-1 outline-none w-full"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
             >
               {devices.map(d => (
-                <option key={d.deviceId} value={d.deviceId}>{d.label || `Device ${d.deviceId}`}</option>
+                <option key={d.deviceId} value={d.deviceId}>{d.label || `Device ${d.deviceId.slice(0, 8)}...`}</option>
               ))}
             </select>
           </div>

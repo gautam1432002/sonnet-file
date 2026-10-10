@@ -18,22 +18,42 @@ function formatTime(secs: number) {
   return `${m}:${s}`;
 }
 
+// Extract YouTube video ID from various URL formats or plain ID
+function extractYouTubeId(input: string): string | null {
+  const trimmed = input.trim();
+  // Plain video ID (11 chars, alphanumeric + _ -)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname.includes('youtu.be')) return url.pathname.slice(1);
+    if (url.hostname.includes('youtube.com')) return url.searchParams.get('v');
+  } catch {
+    // not a url
+  }
+  const match = trimmed.match(/[a-zA-Z0-9_-]{11}/);
+  return match ? match[0] : null;
+}
+
 export function DeckUI({ id }: DeckUIProps) {
   const deckState = useStore(state => id === 'A' ? state.deckA : state.deckB);
   const updateDeck = useStore(state => state.updateDeck);
   const crossfader = useStore(state => state.crossfader);
   const crossfaderCurve = useStore(state => state.crossfaderCurve);
   const deckObj = id === 'A' ? deckAObj : deckBObj;
-  
+
   const [peaks, setPeaks] = useState<number[]>([]);
   const [pos, setPos] = useState(0);
   const [ytPlayer, setYtPlayer] = useState<YouTubePlayer | null>(null);
-  
+
+  const [ytInput, setYtInput] = useState('');
+  const [showYtInput, setShowYtInput] = useState(false);
+  const [ytError, setYtError] = useState('');
+
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -73,16 +93,16 @@ export function DeckUI({ id }: DeckUIProps) {
       if (buffer) {
         const computedPeaks = computePeaks(buffer, 800);
         setPeaks(computedPeaks);
-        updateDeck(id, { 
-          trackName: file.name, 
+        updateDeck(id, {
+          trackName: file.name.replace(/\.[^/.]+$/, ''),
           duration: deckObj.getDuration(),
           playing: false,
           peaks: computedPeaks,
           youtubeId: null
         });
       } else {
-        updateDeck(id, { 
-          trackName: file.name, 
+        updateDeck(id, {
+          trackName: file.name.replace(/\.[^/.]+$/, ''),
           duration: deckObj.getDuration(),
           playing: false,
           youtubeId: null
@@ -95,29 +115,20 @@ export function DeckUI({ id }: DeckUIProps) {
     }
   };
 
-  const handleLiveCapture = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true
-      });
-      await engine.ctx.resume();
-      await deckObj.load(stream);
-      setPeaks([]);
-      updateDeck(id, { 
-        trackName: 'Live Capture', 
-        duration: Infinity,
-        playing: true,
-        youtubeId: null
-      });
-      deckObj.play();
-    } catch (e) {
-      console.error(e);
+  const handleYtSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setYtError('');
+    const vid = extractYouTubeId(ytInput);
+    if (!vid) {
+      setYtError('Invalid YouTube URL or ID');
+      return;
     }
-  };
-
-  const handleYouTubeURL = () => {
-    setShowSearch(!showSearch);
+    deckObj.pause();
+    setPeaks([]);
+    updateDeck(id, { youtubeId: vid, trackName: `YouTube: ${vid}`, duration: 100, playing: true });
+    setYtInput('');
+    setShowYtInput(false);
+    setShowSearch(false);
   };
 
   const performSearch = async (e: React.FormEvent) => {
@@ -139,14 +150,17 @@ export function DeckUI({ id }: DeckUIProps) {
     setPeaks([]);
     updateDeck(id, { youtubeId: vId, trackName: title, duration: 100, playing: true });
     setShowSearch(false);
+    setShowYtInput(false);
   };
 
-  // Calculate rotation for jog wheel based on position
-  const jogRotation = (pos / 2) * 360; // 1 rotation every 2 seconds
+  const jogRotation = (pos / 2) * 360;
+  const hasTrack = !!deckState.trackName && deckState.trackName !== 'No track loaded';
+  const progressPct = deckState.duration > 0 ? (pos / deckState.duration) * 100 : 0;
 
   return (
-    <div 
-      className={`flex-1 p-4 flex flex-col gap-4 relative transition-colors bg-[#1a1a1a] border-r border-[#222] ${isDragging ? 'ring-2 ring-[#1ed760] bg-black/40' : ''}`}
+    <div
+      className={`flex flex-col h-full relative transition-all duration-300 ${isDragging ? 'ring-2 ring-inset ring-[var(--accent)]' : ''}`}
+      style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)' }}
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={(e) => {
@@ -156,49 +170,91 @@ export function DeckUI({ id }: DeckUIProps) {
         if (file) handleFile(file);
       }}
     >
-      {/* Top Bar (Track Info) */}
-      <div className="flex justify-between items-start h-12">
-        <div className="flex flex-col overflow-hidden max-w-[200px]">
-          <div className="text-xl font-bold tracking-tight text-[#1ed760]">{id}</div>
-          <div className="text-sm font-medium truncate text-gray-300" title={deckState.trackName || 'No track loaded'}>
-            {deckState.trackName || 'No track loaded'}
-          </div>
+      {/* Deck Header */}
+      <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span
+            className="text-lg font-black tracking-tighter"
+            style={{ color: 'var(--accent)', textShadow: deckState.playing ? '0 0 12px var(--accent)' : 'none' }}
+          >
+            {id}
+          </span>
+          <span className="text-xs text-white/40 font-mono">DECK</span>
+          {deckState.playing && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+          )}
         </div>
-        <div className="flex flex-col items-end gap-1 font-mono text-sm opacity-80 select-none text-white">
-          <span className="font-bold text-[#1ed760]">{formatTime(pos)}</span>
+        <div className="font-mono text-xs text-white/50 flex gap-2">
+          <span style={{ color: 'var(--accent)' }}>{formatTime(pos)}</span>
+          <span className="text-white/20">|</span>
           <span>-{formatTime(Math.max(0, deckState.duration - pos))}</span>
         </div>
       </div>
 
-      <div className="flex flex-1 relative">
-        
+      {/* Track Name */}
+      <div className="px-4 pb-2">
+        <div
+          className="text-xs font-medium truncate text-white/60 tracking-wide"
+          title={deckState.trackName || 'Drop audio file or load YouTube'}
+        >
+          {deckState.trackName || (
+            <span className="text-white/20 italic">Drop audio file or load YouTube below</span>
+          )}
+        </div>
+        {/* Progress bar */}
+        {hasTrack && (
+          <div className="mt-1 h-0.5 w-full bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${progressPct}%`, background: 'var(--accent)' }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Main Area */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4 relative">
+
         {/* Search Overlay */}
         {showSearch && (
-          <div className="absolute inset-0 z-50 bg-[#111] flex flex-col p-2 gap-2">
+          <div className="absolute inset-0 z-50 flex flex-col p-4 gap-3" style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(20px)' }}>
             <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-white">Search YouTube</h3>
-              <button onClick={() => setShowSearch(false)} className="text-gray-400 hover:text-white">✕</button>
+              <span className="text-sm font-bold text-white/80 tracking-wider">SEARCH YOUTUBE</span>
+              <button onClick={() => setShowSearch(false)} className="text-white/40 hover:text-white text-lg leading-none">✕</button>
             </div>
             <form onSubmit={performSearch} className="flex gap-2">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search songs..." 
-                className="flex-1 bg-[#222] border border-[#333] text-sm text-white px-2 py-1 rounded outline-none focus:border-[#1ed760]"
+                placeholder="Search songs..."
+                autoFocus
+                className="flex-1 bg-white/5 border border-white/10 text-sm text-white px-3 py-2 rounded-lg outline-none focus:border-[var(--accent)] transition-colors"
               />
-              <button type="submit" className="bg-[#1ed760] text-black px-3 py-1 rounded text-sm font-bold">Search</button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                style={{ background: 'var(--accent)', color: '#000' }}
+              >
+                Search
+              </button>
             </form>
-            <div className="flex-1 overflow-y-auto flex flex-col gap-2">
+            <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
               {isSearching ? (
-                <div className="text-center text-gray-500 text-sm mt-4">Searching...</div>
+                <div className="text-center text-white/30 text-sm mt-8">Searching...</div>
+              ) : searchResults.length === 0 ? (
+                <div className="text-center text-white/20 text-xs mt-8">No results. Try a search above.</div>
               ) : (
                 searchResults.map((video, idx) => (
-                  <div key={idx} onClick={() => selectYouTubeVideo(video.videoId, video.title)} className="flex gap-2 p-2 hover:bg-[#222] cursor-pointer rounded">
-                    <img src={video.thumbnail} className="w-16 h-12 object-cover rounded" />
-                    <div className="flex flex-col flex-1 overflow-hidden">
-                      <div className="text-xs text-white truncate font-bold">{video.title}</div>
-                      <div className="text-[10px] text-gray-400 truncate">{video.author}</div>
+                  <div
+                    key={idx}
+                    onClick={() => selectYouTubeVideo(video.videoId, video.title)}
+                    className="flex gap-3 p-2 rounded-lg cursor-pointer hover:bg-white/5 transition-colors"
+                  >
+                    <img src={video.thumbnail} className="w-20 h-14 object-cover rounded-md flex-shrink-0" />
+                    <div className="flex flex-col flex-1 overflow-hidden justify-center">
+                      <div className="text-xs text-white/80 truncate font-medium leading-tight">{video.title}</div>
+                      <div className="text-[10px] text-white/30 truncate mt-0.5">{video.author}</div>
                     </div>
                   </div>
                 ))
@@ -207,136 +263,209 @@ export function DeckUI({ id }: DeckUIProps) {
           </div>
         )}
 
-        {/* Main Deck Area */}
-        <div className="flex-1 flex flex-col items-center justify-around">
-          
-          {deckState.youtubeId ? (
-            <div className="w-64 h-48 bg-black border-[6px] border-[#111] shadow-2xl overflow-hidden rounded-md relative">
-              <YouTube 
-                videoId={deckState.youtubeId} 
-                opts={{ width: '256', height: '192', playerVars: { autoplay: 1, controls: 1, disablekb: 0 } }}
-                onReady={(e) => {
-                  setYtPlayer(e.target);
-                  updateDeck(id, { duration: e.target.getDuration() });
-                }}
-                onStateChange={(e) => {
-                  if (e.data === 1) updateDeck(id, { playing: true });
-                  else if (e.data === 2) updateDeck(id, { playing: false });
-                }}
-              />
-            </div>
-          ) : (
-            <div className="relative">
-              {/* Jog Wheel */}
-              <div 
-                className="w-56 h-56 rounded-full border-[6px] border-[#111] bg-[#222] shadow-2xl flex items-center justify-center overflow-hidden"
-                style={{ transform: `rotate(${jogRotation}deg)` }}
-              >
-                {/* Vinyl grooves */}
-                <div className="absolute inset-0 rounded-full border border-white/5 m-3 pointer-events-none"></div>
-                <div className="absolute inset-0 rounded-full border border-white/5 m-8 pointer-events-none"></div>
-                <div className="absolute inset-0 rounded-full border border-white/5 m-12 pointer-events-none"></div>
-                <div className="absolute inset-0 rounded-full border border-white/5 m-16 pointer-events-none"></div>
-                
-                {/* Center label */}
-                <div className="w-20 h-20 rounded-full bg-[#111] border border-[#333] flex items-center justify-center relative">
-                   <div className="w-2 h-2 rounded-full bg-white/50 absolute top-1"></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Hot Cues & Transport */}
-          <div className="w-full flex flex-col gap-4 px-4">
-            {/* Hot Cues Placeholder */}
-            <div className="grid grid-cols-4 gap-2">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <button key={i} className="h-8 bg-[#2a2a2a] hover:bg-[#333] rounded text-xs font-bold text-gray-500 border-b-2 border-black active:border-b-0 active:translate-y-[2px]">
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-
-            {/* Play/Cue Buttons */}
-            <div className="flex gap-4 items-center">
-              <button 
-                onClick={() => {
-                  deckObj.cueToStart();
-                  if (deckState.playing) {
-                    updateDeck(id, { playing: false });
-                  }
-                }}
-                className="w-16 h-16 rounded-full flex items-center justify-center font-bold bg-[#333] border border-[#444] hover:bg-[#444] text-orange-500 shadow-[0_5px_0_#111] active:translate-y-[5px] active:shadow-none transition-all"
-              >
-                CUE
-              </button>
-              <button 
-                onClick={() => {
-                  if (deckState.youtubeId && ytPlayer) {
-                    deckState.playing ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
-                  } else {
-                    engine.resume();
-                    updateDeck(id, { playing: !deckState.playing });
-                  }
-                }}
-                className={`w-16 h-16 rounded-full flex items-center justify-center font-bold shadow-[0_5px_0_#111] active:translate-y-[5px] active:shadow-none transition-all border border-[#444] ${
-                  deckState.playing 
-                    ? 'bg-[#1ed760] text-black shadow-[0_5px_0_#149643]' 
-                    : 'bg-[#333] hover:bg-[#444] text-[#1ed760]'
-                }`}
-              >
-                {deckState.playing ? '||' : '▶'}
-              </button>
-              
-              <div className="ml-auto flex gap-1">
-                <button 
-                  onClick={handleYouTubeURL}
-                  className="px-2 py-1 bg-red-500/20 text-[10px] font-bold text-red-400 rounded hover:bg-red-500/40"
-                  title="Load YouTube URL"
-                >
-                  YT
-                </button>
-                <button 
-                  onClick={handleLiveCapture}
-                  className="px-2 py-1 bg-[#2a2a2a] text-[10px] text-red-400 rounded hover:bg-[#333]"
-                >
-                  Live Tab
-                </button>
-                <input type="file" accept="audio/*" className="hidden" ref={fileInputRef} onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFile(file);
-                }} />
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-2 py-1 bg-[#2a2a2a] text-[10px] text-white rounded hover:bg-[#333]"
-                >
-                  File
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pitch Fader (Far Edge) */}
-        <div className="w-16 flex flex-col items-center py-4 bg-[#111] rounded shadow-inner ml-4">
-          <div className="text-[10px] font-bold text-gray-400 mb-1">TEMPO</div>
-          <div className="text-[10px] text-[#1ed760] mb-4 font-mono">{((deckState.pitch - 1) * 100).toFixed(1)}%</div>
-          <div className="flex-1 relative flex justify-center w-full group">
-            {/* Track */}
-            <div className="absolute inset-y-0 w-1 bg-black rounded-full"></div>
-            {/* Zero mark */}
-            <div className="absolute top-1/2 w-4 h-[2px] bg-gray-500 -translate-y-1/2"></div>
-            
-            <input 
-              type="range" 
-              min="0.9" max="1.1" step="0.001" 
-              value={deckState.pitch}
-              onChange={(e) => updateDeck(id, { pitch: parseFloat(e.target.value) })}
-              onDoubleClick={() => updateDeck(id, { pitch: 1 })}
-              className="h-full -rotate-90 appearance-none bg-transparent cursor-pointer z-10 w-[240px]"
+        {/* YouTube embed or Jog Wheel */}
+        {deckState.youtubeId ? (
+          <div className="w-full rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+            <YouTube
+              videoId={deckState.youtubeId}
+              opts={{
+                width: '100%',
+                height: '200',
+                playerVars: { autoplay: 1, controls: 1, disablekb: 0, modestbranding: 1, rel: 0 }
+              }}
+              className="w-full"
+              onReady={(e) => {
+                setYtPlayer(e.target);
+                updateDeck(id, { duration: e.target.getDuration() });
+              }}
+              onStateChange={(e) => {
+                if (e.data === 1) updateDeck(id, { playing: true });
+                else if (e.data === 2) updateDeck(id, { playing: false });
+              }}
             />
+            <button
+              onClick={() => { updateDeck(id, { youtubeId: null, trackName: null, playing: false }); setYtPlayer(null); }}
+              className="w-full text-xs text-white/30 hover:text-white/60 py-1 text-center transition-colors border-t border-white/5"
+            >
+              ✕ Unload YouTube
+            </button>
           </div>
+        ) : (
+          <div className="relative flex-shrink-0">
+            <div
+              className="w-44 h-44 rounded-full flex items-center justify-center overflow-hidden shadow-2xl"
+              style={{
+                transform: `rotate(${jogRotation}deg)`,
+                border: `3px solid rgba(255,255,255,0.08)`,
+                background: 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.05), rgba(0,0,0,0.8))'
+              }}
+            >
+              {[3, 8, 12, 16, 20].map(m => (
+                <div key={m} className="absolute inset-0 rounded-full border border-white/5" style={{ margin: m }} />
+              ))}
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-white/30" />
+              </div>
+            </div>
+            {/* Drop hint */}
+            {!hasTrack && (
+              <div className="absolute inset-0 rounded-full flex items-center justify-center pointer-events-none">
+                <span className="text-[10px] text-white/20 text-center leading-relaxed tracking-widest">DROP<br/>AUDIO</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Waveform */}
+        {peaks.length > 0 && !deckState.youtubeId && (
+          <div className="w-full h-12">
+            <Waveform peaks={peaks} position={pos} duration={deckState.duration} />
+          </div>
+        )}
+      </div>
+
+      {/* Hot Cues (8 pads) */}
+      <div className="px-4 pb-2">
+        <div className="grid grid-cols-8 gap-1">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <button
+              key={i}
+              className="h-6 rounded text-[9px] font-bold transition-all"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                color: 'rgba(255,255,255,0.3)',
+              }}
+            >
+              {i + 1}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* Transport Controls */}
+      <div className="px-4 pb-4 flex items-center gap-3">
+        {/* CUE button */}
+        <button
+          onClick={() => { deckObj.cueToStart(); if (deckState.playing) updateDeck(id, { playing: false }); }}
+          className="w-14 h-14 rounded-full font-bold text-xs transition-all active:scale-95"
+          style={{
+            background: 'rgba(255, 120, 0, 0.15)',
+            border: '1px solid rgba(255,120,0,0.3)',
+            color: '#ff9840',
+            boxShadow: '0 4px 0 rgba(0,0,0,0.5)',
+          }}
+        >
+          CUE
+        </button>
+
+        {/* PLAY button */}
+        <button
+          onClick={() => {
+            if (deckState.youtubeId && ytPlayer) {
+              deckState.playing ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
+            } else {
+              engine.resume();
+              updateDeck(id, { playing: !deckState.playing });
+            }
+          }}
+          className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg transition-all active:scale-95 ${deckState.playing ? 'playing-glow' : ''}`}
+          style={{
+            background: deckState.playing ? 'var(--accent)' : 'rgba(255,255,255,0.08)',
+            border: `1px solid ${deckState.playing ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`,
+            color: deckState.playing ? '#000' : 'var(--accent)',
+            boxShadow: '0 4px 0 rgba(0,0,0,0.5)',
+          }}
+        >
+          {deckState.playing ? '⏸' : '▶'}
+        </button>
+
+        {/* Pitch % */}
+        <div className="flex flex-col items-center ml-1">
+          <span className="text-[9px] text-white/30 font-mono tracking-widest">TEMPO</span>
+          <span className="text-xs font-mono" style={{ color: 'var(--accent)' }}>
+            {((deckState.pitch - 1) * 100).toFixed(1)}%
+          </span>
+        </div>
+
+        {/* Source buttons (right side) */}
+        <div className="ml-auto flex flex-col gap-1">
+          {/* YouTube URL paste */}
+          <button
+            onClick={() => { setShowYtInput(v => !v); setShowSearch(false); }}
+            className="px-3 py-1 rounded text-[10px] font-bold transition-all"
+            style={{
+              background: showYtInput ? 'rgba(255,0,0,0.3)' : 'rgba(255,0,0,0.1)',
+              border: '1px solid rgba(255,0,0,0.25)',
+              color: '#ff6b6b',
+            }}
+          >
+            ▶ YouTube
+          </button>
+
+          {/* File load */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3 py-1 rounded text-[10px] font-bold transition-all"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'rgba(255,255,255,0.5)',
+            }}
+          >
+            ⊕ File
+          </button>
+          <input type="file" accept="audio/*,video/*" className="hidden" ref={fileInputRef} onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+          }} />
+        </div>
+      </div>
+
+      {/* YouTube URL Input (expanded panel) */}
+      {showYtInput && (
+        <div className="px-4 pb-4 flex flex-col gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <form onSubmit={handleYtSubmit} className="flex gap-2">
+            <input
+              type="text"
+              value={ytInput}
+              onChange={e => { setYtInput(e.target.value); setYtError(''); }}
+              placeholder="Paste YouTube URL or video ID..."
+              autoFocus
+              className="flex-1 text-xs bg-white/5 border border-white/10 text-white px-3 py-2 rounded-lg outline-none focus:border-[var(--accent)] transition-colors"
+            />
+            <button
+              type="submit"
+              className="px-3 py-2 rounded-lg text-xs font-bold"
+              style={{ background: '#ff4444', color: '#fff' }}
+            >
+              Load
+            </button>
+          </form>
+          {ytError && <span className="text-[10px] text-red-400">{ytError}</span>}
+          <button
+            onClick={() => { setShowSearch(true); setShowYtInput(false); }}
+            className="text-[10px] text-white/30 hover:text-white/50 text-left underline transition-colors"
+          >
+            Search YouTube instead →
+          </button>
+        </div>
+      )}
+
+      {/* Pitch Fader (bottom) */}
+      <div className="px-4 pb-4 flex items-center gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+        <span className="text-[9px] text-white/30 font-mono tracking-widest flex-shrink-0">PITCH</span>
+        <input
+          type="range"
+          min="0.9" max="1.1" step="0.001"
+          value={deckState.pitch}
+          onChange={(e) => updateDeck(id, { pitch: parseFloat(e.target.value) })}
+          onDoubleClick={() => updateDeck(id, { pitch: 1 })}
+          className="flex-1 horizontal"
+        />
       </div>
     </div>
   );

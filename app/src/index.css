@@ -2,35 +2,44 @@
 
 @layer base {
   :root {
-    --bg-from: #0b1026;
-    --bg-via: #1e2a5a;
-    --bg-to: #3b6ea8;
-    --accent: #cfe8ff;
-    
-    --glass: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --blur: 12px;
+    --bg-from: #001a0d;
+    --bg-via: #00591a;
+    --bg-to: #00c896;
+    --accent: #39ff14;
+    --ambient-speed: 18s;
+
+    --glass: rgba(255, 255, 255, 0.04);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --blur: 16px;
     --radius: 16px;
   }
 }
 
 html, body {
   @apply h-full w-full m-0 p-0 overflow-hidden text-white font-sans;
-  background: linear-gradient(-45deg, var(--bg-from), var(--bg-via), var(--bg-to), var(--bg-from));
-  background-size: 400% 400%;
-  animation: ambientGradient 15s ease infinite;
+  background: linear-gradient(
+    -45deg,
+    var(--bg-from),
+    var(--bg-via),
+    var(--bg-to),
+    var(--bg-via),
+    var(--bg-from)
+  );
+  background-size: 600% 600%;
+  animation: ambientGradient var(--ambient-speed) ease infinite;
+  /* Smooth palette transition when colors change */
+  transition:
+    --bg-from 4s ease,
+    --bg-via 4s ease,
+    --bg-to 4s ease,
+    --accent 4s ease;
 }
 
 @keyframes ambientGradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  0%   { background-position: 0% 50%; }
+  33%  { background-position: 100% 0%; }
+  66%  { background-position: 100% 100%; }
+  100% { background-position: 0% 50%; }
 }
 
 #root {
@@ -44,7 +53,15 @@ html, body {
   -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+.glass-panel-solid {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
 }
 
 .knob-track {
@@ -65,4 +82,58 @@ html, body {
 }
 .animate-marquee {
   animation: marquee 10s linear infinite;
+}
+
+/* Accent glow pulse when playing */
+@keyframes accentPulse {
+  0%, 100% { box-shadow: 0 0 10px var(--accent), 0 0 30px var(--accent); }
+  50%       { box-shadow: 0 0 20px var(--accent), 0 0 60px var(--accent); }
+}
+.playing-glow {
+  animation: accentPulse 2s ease-in-out infinite;
+}
+
+/* Vertical range slider */
+input[type='range'].vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: none;
+  -webkit-appearance: slider-vertical;
+  width: 8px;
+  cursor: pointer;
+  outline: none;
+}
+input[type='range'].vertical::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 12px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+}
+input[type='range'].vertical::-webkit-slider-runnable-track {
+  width: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+}
+
+/* Horizontal range slider */
+input[type='range'].horizontal {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  cursor: pointer;
+  outline: none;
+}
+input[type='range'].horizontal::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 32px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
 }
