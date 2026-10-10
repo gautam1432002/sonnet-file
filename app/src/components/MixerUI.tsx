@@ -74,7 +74,7 @@ export function MixerUI() {
           paddingBottom: 20
         }}>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 40 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', textAlign: 'center', letterSpacing: '0.1em', fontWeight: 600 }}>CF CURVE</span>
             {(['equal_power', 'linear', 'scratch'] as const).map(c => (
               <button key={c} onClick={() => setCrossfaderCurve(c)} style={{
@@ -88,6 +88,44 @@ export function MixerUI() {
               </button>
             ))}
           </div>
+
+          <button onClick={() => {
+            // Automix logic: sweep crossfader to opposite side
+            const target = crossfader < 0.5 ? 1 : 0;
+            const start = crossfader;
+            const duration = 4000;
+            const startTime = performance.now();
+            
+            // Auto play the target deck if it's not playing
+            if (target === 1 && !deckB.playing) updateDeck('B', { playing: true });
+            if (target === 0 && !deckA.playing) updateDeck('A', { playing: true });
+
+            const animate = (now: number) => {
+              const elapsed = now - startTime;
+              const progress = Math.min(1, elapsed / duration);
+              // ease-in-out curve
+              const ease = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+              setCrossfader(start + (target - start) * ease);
+              
+              if (progress < 1) requestAnimationFrame(animate);
+              else {
+                // Auto pause the old deck
+                if (target === 1) updateDeck('A', { playing: false });
+                else updateDeck('B', { playing: false });
+              }
+            };
+            requestAnimationFrame(animate);
+          }}
+          style={{
+            marginBottom: 20, padding: '8px 12px', borderRadius: 6, fontSize: 10, fontWeight: 800,
+            background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
+            cursor: 'pointer', letterSpacing: '0.1em', transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#000'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
+          >
+            AUTO MIX
+          </button>
 
           <div style={{ width: '100%', padding: '0 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>

@@ -240,7 +240,19 @@ export function DeckUI({ id }: DeckUIProps) {
       {/* ─── Transport & Controls ─── */}
       <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
         
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button onClick={() => {
+              // Basic SYNC: Match pitch to the other deck
+              const otherDeckId = id === 'A' ? 'B' : 'A';
+              const otherDeck = id === 'A' ? useStore.getState().deckB : useStore.getState().deckA;
+              updateDeck(id, { pitch: otherDeck.pitch });
+            }}
+            style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(57,255,20,0.1)', border: '2px solid rgba(57,255,20,0.5)', color: '#39ff14', fontSize: 9, fontWeight: 800, cursor: 'pointer' }}
+            title="Sync Pitch to Other Deck"
+          >
+            SYNC
+          </button>
+
           <button onClick={() => { deckObj.cueToStart(); if (isPlaying) updateDeck(id, { playing: false }); }}
             style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,100,0,0.1)', border: '2px solid #ff6600', color: '#ff6600', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
             CUE
