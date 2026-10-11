@@ -18,36 +18,39 @@ export const GraphVisualizer: React.FC<GraphVisualizerProps> = ({ analyser }) =>
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
-    const draw = () => {
-      // Loop the animation
-      animationRef.current = requestAnimationFrame(draw);
+      // Retrieve computed colors once before the loop to prevent performance drops
+      const colorA = getComputedStyle(document.documentElement).getPropertyValue('--deck-a-accent').trim() || '#00e5ff';
+      const colorB = getComputedStyle(document.documentElement).getPropertyValue('--deck-b-accent').trim() || '#ff007f';
 
-      // Get real-time frequency data
-      analyser.getByteFrequencyData(dataArray);
+      const draw = () => {
+        // Loop the animation
+        animationRef.current = requestAnimationFrame(draw);
 
-      // Clear the canvas for the next frame
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Get real-time frequency data
+        analyser.getByteFrequencyData(dataArray);
 
-      // Bar settings
-      const barWidth = (canvas.width / bufferLength) * 2.5;
-      let x = 0;
+        // Clear the canvas for the next frame
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * canvas.height;
+        // Bar settings
+        const barWidth = (canvas.width / bufferLength) * 2.5;
+        let x = 0;
 
-        // Professional Gradient: Cyan to Magenta to match your decks
+        // Create gradient once per frame (or even cache this if canvas height doesn't change)
         const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
-        gradient.addColorStop(0, 'var(--deck-a-accent)'); // Cyan
-        gradient.addColorStop(1, 'var(--deck-b-accent)'); // Magenta
+        gradient.addColorStop(0, colorA); // Cyan
+        gradient.addColorStop(1, colorB); // Magenta
 
-        ctx.fillStyle = gradient;
-        
-        // Draw the bar (origin is top-left, so we calculate Y from the bottom)
-        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * canvas.height;
+          ctx.fillStyle = gradient;
+          
+          // Draw the bar (origin is top-left, so we calculate Y from the bottom)
+          ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
 
-        x += barWidth + 2; // gap
-      }
-    };
+          x += barWidth + 2; // gap
+        }
+      };
 
     draw();
 

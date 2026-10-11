@@ -55,7 +55,7 @@ export function Waveform({ peaks, position, duration, onSeek }: WaveformProps) {
     
     // Fill past progress
     ctx.globalCompositeOperation = 'source-atop';
-    ctx.fillStyle = 'var(--accent)';
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00ffcc';
     ctx.fillRect(0, 0, progressX, height);
     ctx.globalCompositeOperation = 'source-over';
     

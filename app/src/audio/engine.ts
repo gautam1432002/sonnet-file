@@ -5,7 +5,8 @@ class AudioEngine {
   public masterAnalyser: AnalyserNode;
   
   constructor() {
-    this.ctx = new window.AudioContext({ latencyHint: 'interactive' });
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    this.ctx = new AudioContextClass({ latencyHint: 'interactive' });
     this.masterGain = this.ctx.createGain();
     
     this.limiter = this.ctx.createDynamicsCompressor();
